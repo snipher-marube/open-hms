@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ patient.first_name }} {{ patient.last_name }} - HMS{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <!-- Patient Header -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div class="flex justify-between items-start">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">{{ patient.first_name }} {{ patient.last_name }}</h1>
+                <p class="text-gray-600">Patient ID: {{ patient.id }}</p>
+            </div>
+            <div class="flex space-x-3">
+                <a href="{% url 'patient-update' patient.pk %}" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">
+                    Edit Patient
+                </a>
+                <a href="{% url 'medical-record-create' patient.pk %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                    Add Medical Record
+                </a>
+                <a href="{% url 'patient-list' %}" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md">
+                    Back to List
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Patient Information -->
+        <div class="lg:col-span-1 space-y-6">
+            <!-- Personal Info Card -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-lg font-semibold mb-4 text-gray-700">Personal Information</h2>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">Age</label>
+                        <p class="text-gray-800">{{ patient.age }} years</p>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">Gender</label>
+                        <p class="text-gray-800">{{ patient.get_gender_display }}</p>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">Blood Group</label>
+                        <p class="text-gray-800">{{ patient.blood_group|default:"Not specified" }}</p>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">Registration Date</label>
+                        <p class="text-gray-800">{{ patient.registration_date|date:"M d, Y" }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Info Card -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-lg font-semibold mb-4 text-gray-700">Contact Information</h2>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">Phone</label>
+                        <p class="text-gray-800">{{ patient.phone }}</p>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">Email</label>
+                        <p class="text-gray-800">{{ patient.email|default:"Not specified" }}</p>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">Address</label>
+                        <p class="text-gray-800">{{ patient.address }}</p>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">Emergency Contact</label>
+                        <p class="text-gray-800">{{ patient.emergency_contact|default:"Not specified" }}</p>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">Emergency Phone</label>
+                        <p class="text-gray-800">{{ patient.emergency_phone|default:"Not specified" }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Medical Info Card -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-lg font-semibold mb-4 text-gray-700">Medical Information</h2>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">Medical History</label>
+                        <p class="text-gray-800">{{ patient.medical_history|default:"No significant medical history"|linebreaks }}</p>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">Allergies</label>
+                        <p class="text-gray-800">{{ patient.allergies|default:"No known allergies"|linebreaks }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Medical Records -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-lg font-semibold text-gray-700">Medical Records</h2>
+                    <span class="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">
+                        {{ medical_records|length }} records
+                    </span>
+                </div>
+
+                <div class="space-y-4">
+                    {% for record in medical_records %}
+                    <div class="border rounded-lg p-4 hover:bg-gray-50 transition duration-200">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="font-semibold text-gray-800">
+                                    Visit on {{ record.visit_date|date:"M d, Y" }}
+                                </h3>
+                                <p class="text-sm text-gray-500">
+                                    Doctor: {{ record.doctor.get_full_name|default:record.doctor.username }}
+                                </p>
+                            </div>
+                            {% if record.follow_up_date %}
+                            <span class="bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-1 rounded">
+                                Follow-up: {{ record.follow_up_date|date:"M d, Y" }}
+                            </span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <label class="font-medium text-gray-600">Symptoms:</label>
+                                <p class="text-gray-800 mt-1">{{ record.symptoms|linebreaks }}</p>
+                            </div>
+                            <div>
+                                <label class="font-medium text-gray-600">Diagnosis:</label>
+                                <p class="text-gray-800 mt-1">{{ record.diagnosis|linebreaks }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <label class="font-medium text-gray-600">Treatment:</label>
+                            <p class="text-gray-800 mt-1">{{ record.treatment|linebreaks }}</p>
+                        </div>
+                        
+                        {% if record.notes %}
+                        <div class="mt-3">
+                            <label class="font-medium text-gray-600">Notes:</label>
+                            <p class="text-gray-800 mt-1">{{ record.notes|linebreaks }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-8 text-gray-500">
+                        <svg class="w-12 h-12 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <p class="mt-2">No medical records found.</p>
+                        <a href="{% url 'medical-record-create' patient.pk %}" class="text-blue-600 hover:text-blue-700 mt-1 inline-block">
+                            Add the first medical record
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% load tailwind_filters %}
+
+{% block title %}{{ title }} - HMS{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h1 class="text-2xl font-bold mb-6">{{ title }}</h1>
+        
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            <div class="space-y-4">
+                {{ form.patient|as_crispy_field }}
+                {{ form.doctor|as_crispy_field }}
+                {{ form.appointment_date|as_crispy_field }}
+                {{ form.reason|as_crispy_field }}
+                {{ form.notes|as_crispy_field }}
+            </div>
+
+            <div class="flex justify-end space-x-4 pt-6 border-t">
+                <a href="{% url 'appointment-list' %}" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-md transition duration-200">
+                    Cancel
+                </a>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition duration-200">
+                    Save Appointment
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

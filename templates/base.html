@@ -17,15 +17,22 @@
                     <h1 class="text-2xl font-bold">Clinic HMS</h1>
                     <div class="hidden md:flex space-x-4">
                         <a href="{% url 'dashboard' %}" class="hover:bg-blue-700 px-3 py-2 rounded">Dashboard</a>
-                        <a href="#" class="hover:bg-blue-700 px-3 py-2 rounded">Patients</a>
-                        <a href="#" class="hover:bg-blue-700 px-3 py-2 rounded">Appointments</a>
-                        <a href="#" class="hover:bg-blue-700 px-3 py-2 rounded">Inventory</a>
-                        <a href="#" class="hover:bg-blue-700 px-3 py-2 rounded">Reports</a>
+                        <a href="{% url 'patient-list' %}" class="hover:bg-blue-700 px-3 py-2 rounded">Patients</a>
+                        <a href="{% url 'appointment-list' %}" class="hover:bg-blue-700 px-3 py-2 rounded">Appointments</a>
+                        <a href="{% url 'inventory-list' %}" class="hover:bg-blue-700 px-3 py-2 rounded">Inventory</a>
+                        <a href="{% url 'reports' %}" class="hover:bg-blue-700 px-3 py-2 rounded">Reports</a>
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
                     <span>Welcome, {{ request.user.get_full_name|default:request.user.username }}</span>
-                    <a href="{% url 'logout' %}" class="bg-blue-700 hover:bg-blue-800 px-4 py-2 rounded">Logout</a>
+                    
+                    <!-- Updated Logout Form -->
+                    <form method="post" action="{% url 'logout' %}" class="inline">
+                        {% csrf_token %}
+                        <button type="submit" class="bg-blue-700 hover:bg-blue-800 px-4 py-2 rounded cursor-pointer">
+                            Logout
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -35,10 +42,18 @@
     <div class="md:hidden bg-blue-500 text-white">
         <div class="flex overflow-x-auto space-x-4 px-4 py-2">
             <a href="{% url 'dashboard' %}" class="whitespace-nowrap">Dashboard</a>
-            <a href="#" class="whitespace-nowrap">Patients</a>
-            <a href="#" class="whitespace-nowrap">Appointments</a>
-            <a href="#" class="whitespace-nowrap">Inventory</a>
-            <a href="#" class="whitespace-nowrap">Reports</a>
+            <a href="{% url 'patient-list' %}" class="whitespace-nowrap">Patients</a>
+            <a href="{% url 'appointment-list' %}" class="whitespace-nowrap">Appointments</a>
+            <a href="{% url 'inventory-list' %}" class="whitespace-nowrap">Inventory</a>
+            <a href="{% url 'reports' %}" class="whitespace-nowrap">Reports</a>
+            
+            <!-- Mobile Logout Form -->
+            <form method="post" action="{% url 'logout' %}" class="inline">
+                {% csrf_token %}
+                <button type="submit" class="whitespace-nowrap bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded cursor-pointer">
+                    Logout
+                </button>
+            </form>
         </div>
     </div>
 

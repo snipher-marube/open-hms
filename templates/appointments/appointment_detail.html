@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+
+{% block title %}Appointment Details - HMS{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex justify-between items-start mb-6">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">Appointment Details</h1>
+                <p class="text-gray-600">Scheduled for {{ appointment.appointment_date|date:"M d, Y H:i" }}</p>
+            </div>
+            <div class="flex space-x-3">
+                <a href="{% url 'appointment-update' appointment.pk %}" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">
+                    Edit
+                </a>
+                <a href="{% url 'appointment-list' %}" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md">
+                    Back to List
+                </a>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Appointment Information -->
+            <div class="space-y-6">
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h2 class="text-lg font-semibold mb-4 text-gray-700">Appointment Information</h2>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Status</label>
+                            <p>
+                                <span class="px-2 py-1 text-xs rounded-full 
+                                    {% if appointment.status == 'completed' %}bg-green-100 text-green-800
+                                    {% elif appointment.status == 'cancelled' %}bg-red-100 text-red-800
+                                    {% else %}bg-blue-100 text-blue-800{% endif %}">
+                                    {{ appointment.get_status_display }}
+                                </span>
+                            </p>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Date & Time</label>
+                            <p class="text-gray-800">{{ appointment.appointment_date|date:"M d, Y H:i" }}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Created On</label>
+                            <p class="text-gray-800">{{ appointment.created_at|date:"M d, Y H:i" }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Patient Information -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h2 class="text-lg font-semibold mb-4 text-gray-700">Patient Information</h2>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Name</label>
+                            <p class="text-gray-800">{{ appointment.patient.first_name }} {{ appointment.patient.last_name }}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Phone</label>
+                            <p class="text-gray-800">{{ appointment.patient.phone }}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Email</label>
+                            <p class="text-gray-800">{{ appointment.patient.email|default:"Not specified" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Doctor & Notes -->
+            <div class="space-y-6">
+                <!-- Doctor Information -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h2 class="text-lg font-semibold mb-4 text-gray-700">Doctor Information</h2>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Doctor</label>
+                            <p class="text-gray-800">Dr. {{ appointment.doctor.get_full_name|default:appointment.doctor.username }}</p>
+                        </div>
+                        {% if appointment.doctor.specialization %}
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Specialization</label>
+                            <p class="text-gray-800">{{ appointment.doctor.specialization }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Appointment Details -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h2 class="text-lg font-semibold mb-4 text-gray-700">Appointment Details</h2>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Reason for Visit</label>
+                            <p class="text-gray-800">{{ appointment.reason|linebreaks }}</p>
+                        </div>
+                        {% if appointment.notes %}
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Additional Notes</label>
+                            <p class="text-gray-800">{{ appointment.notes|linebreaks }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Status Update Form -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h2 class="text-lg font-semibold mb-4 text-gray-700">Update Status</h2>
+                    <form method="post" action="{% url 'appointment-update-status' appointment.pk %}">
+                        {% csrf_token %}
+                        <div class="flex space-x-2">
+                            <select name="status" class="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                {% for status_value, status_label in appointment.STATUS_CHOICES %}
+                                <option value="{{ status_value }}" {% if appointment.status == status_value %}selected{% endif %}>
+                                    {{ status_label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                                Update
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% load tailwind_filters %}
+
+{% block title %}{{ title }} - HMS{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h1 class="text-2xl font-bold mb-6">{{ title }}</h1>
+        
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Personal Information -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-semibold text-gray-700 border-b pb-2">Personal Information</h3>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            {{ form.first_name|as_crispy_field }}
+                        </div>
+                        <div>
+                            {{ form.last_name|as_crispy_field }}
+                        </div>
+                    </div>
+                    
+                    {{ form.date_of_birth|as_crispy_field }}
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            {{ form.gender|as_crispy_field }}
+                        </div>
+                        <div>
+                            {{ form.blood_group|as_crispy_field }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact Information -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-semibold text-gray-700 border-b pb-2">Contact Information</h3>
+                    
+                    {{ form.phone|as_crispy_field }}
+                    {{ form.email|as_crispy_field }}
+                    {{ form.address|as_crispy_field }}
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            {{ form.emergency_contact|as_crispy_field }}
+                        </div>
+                        <div>
+                            {{ form.emergency_phone|as_crispy_field }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Medical Information -->
+            <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-gray-700 border-b pb-2">Medical Information</h3>
+                
+                <div class="grid grid-cols-1 gap-4">
+                    {{ form.medical_history|as_crispy_field }}
+                    {{ form.allergies|as_crispy_field }}
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex justify-end space-x-4 pt-6 border-t">
+                <a href="{% url 'patient-list' %}" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-md transition duration-200">
+                    Cancel
+                </a>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition duration-200">
+                    Save Patient
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
