@@ -16,6 +16,7 @@ from .forms import (
     PurchaseOrderForm, PurchaseOrderItemForm, InventorySearchForm, MedicineForm
 )
 from core.models import Clinic
+from prescriptions.models import Medicine
 
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
@@ -299,13 +300,15 @@ def stock_transaction_create(request):
                 transaction.created_by = request.user
                 transaction.save()
                 
-                messages.success(request, f'Stock transaction recorded successfully.')
+                messages.success(request, f'Stock transaction recorded successfully. Transaction ID: {transaction.transaction_id}')
                 return redirect('inventory-list')
             
             except ValidationError as e:
-                for error in e.messages:
-                    messages.error(request, error)
-    
+                for field, errors in e.message_dict.items():
+                    for error in errors:
+                        messages.error(request, f'{field}: {error}')
+            except Exception as e:
+                messages.error(request, f'Error recording transaction: {str(e)}')
     else:
         form = StockTransactionForm()
     
@@ -456,20 +459,23 @@ def resolve_alert(request, alert_id):
     
     return redirect('stock-alerts')
 
-# API endpoints for AJAX requests
 @login_required
 def get_inventory_item_details(request, item_id):
-    item = get_object_or_404(InventoryItem, id=item_id)
-    data = {
-        'id': item.id,
-        'medicine_name': item.medicine.name,
-        'batch_number': item.batch_number,
-        'current_stock': item.quantity,
-        'cost_price': str(item.cost_price),
-        'selling_price': str(item.selling_price),
-        'expiry_date': item.expiry_date.strftime('%Y-%m-%d'),
-    }
-    return JsonResponse(data)
+    """API endpoint to get inventory item details for AJAX requests"""
+    try:
+        item = InventoryItem.objects.get(id=item_id)
+        data = {
+            'id': item.id,
+            'medicine_name': item.medicine.name,
+            'batch_number': item.batch_number,
+            'current_stock': item.quantity,
+            'cost_price': str(item.cost_price),
+            'selling_price': str(item.selling_price),
+            'expiry_date': item.expiry_date.strftime('%Y-%m-%d'),
+        }
+        return JsonResponse(data)
+    except InventoryItem.DoesNotExist:
+        return JsonResponse({'error': 'Inventory item not found'}, status=404)
 
 @login_required
 def check_stock_availability(request):

@@ -1,8 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
 from django.utils import timezone
-from django.urls import reverse_lazy
-from django.forms import inlineformset_factory
 from .models import InventoryItem, StockTransaction, Supplier, Category, PurchaseOrder, PurchaseOrderItem
 from prescriptions.models import Medicine
 
@@ -103,19 +101,54 @@ class StockTransactionForm(forms.ModelForm):
             'inventory_item', 'transaction_type', 'quantity', 'unit_price',
             'reference', 'notes', 'patient', 'prescription'
         ]
+        widgets = {
+            'transaction_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'notes': forms.Textarea(attrs={'rows': 3}),
+        }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Only show active inventory items
         self.fields['inventory_item'].queryset = InventoryItem.objects.filter(status='active')
         
-        # Set initial unit price based on transaction type
-        if self.instance and self.instance.inventory_item:
+        # Set initial unit price based on transaction type - only if instance exists and has inventory_item
+        if self.instance and self.instance.pk and hasattr(self.instance, 'inventory_item') and self.instance.inventory_item:
             if self.instance.transaction_type == 'purchase':
                 self.fields['unit_price'].initial = self.instance.inventory_item.cost_price
             else:
                 self.fields['unit_price'].initial = self.instance.inventory_item.selling_price
-
+        else:
+            # Set default unit price for new transactions based on selected inventory item
+            self.fields['unit_price'].initial = 0
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        transaction_type = cleaned_data.get('transaction_type')
+        quantity = cleaned_data.get('quantity')
+        inventory_item = cleaned_data.get('inventory_item')
+        
+        # Validate quantity based on transaction type
+        if transaction_type and quantity is not None:
+            if transaction_type in ['sale', 'return', 'transfer', 'write_off']:
+                if quantity > 0:
+                    raise ValidationError({
+                        'quantity': f'Quantity must be negative for {transaction_type} transactions.'
+                    })
+            elif transaction_type in ['purchase', 'adjustment']:
+                if quantity < 0:
+                    raise ValidationError({
+                        'quantity': f'Quantity must be positive for {transaction_type} transactions.'
+                    })
+        
+        # Check stock availability for outgoing transactions
+        if (transaction_type in ['sale', 'transfer'] and 
+            inventory_item and quantity is not None):
+            if abs(quantity) > inventory_item.quantity:
+                raise ValidationError({
+                    'quantity': f'Insufficient stock. Available: {inventory_item.quantity}'
+                })
+        
+        return cleaned_data
 class PurchaseOrderForm(forms.ModelForm):
     class Meta:
         model = PurchaseOrder
