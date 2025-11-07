@@ -1,0 +1,185 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - HMS{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Statistics Cards -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+            <div class="p-3 bg-blue-100 rounded-lg">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+            </div>
+            <div class="ml-4">
+                <h3 class="text-sm font-medium text-gray-500">Total Patients</h3>
+                <p class="text-2xl font-semibold text-gray-900">{{ total_patients }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+            <div class="p-3 bg-green-100 rounded-lg">
+                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+            </div>
+            <div class="ml-4">
+                <h3 class="text-sm font-medium text-gray-500">Today's Appointments</h3>
+                <p class="text-2xl font-semibold text-gray-900">{{ today_appointments }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+            <div class="p-3 bg-yellow-100 rounded-lg">
+                <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                </svg>
+            </div>
+            <div class="ml-4">
+                <h3 class="text-sm font-medium text-gray-500">Low Stock Items</h3>
+                <p class="text-2xl font-semibold text-gray-900">{{ low_stock_items }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+            <div class="p-3 bg-red-100 rounded-lg">
+                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+            </div>
+            <div class="ml-4">
+                <h3 class="text-sm font-medium text-gray-500">Pending Bills</h3>
+                <p class="text-2xl font-semibold text-gray-900">{{ pending_bills }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <!-- Patient Registration Chart -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold mb-4">Patient Registrations (Last 6 Months)</h3>
+        <canvas id="patientChart" width="400" height="200"></canvas>
+    </div>
+
+    <!-- Appointment Status Chart -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold mb-4">Appointment Status Distribution</h3>
+        <canvas id="appointmentChart" width="400" height="200"></canvas>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Recent Appointments -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold mb-4">Recent Appointments</h3>
+        <div class="space-y-4">
+            {% for appointment in recent_appointments %}
+            <div class="flex items-center justify-between p-3 border rounded-lg">
+                <div>
+                    <h4 class="font-medium">{{ appointment.patient.first_name }} {{ appointment.patient.last_name }}</h4>
+                    <p class="text-sm text-gray-500">Dr. {{ appointment.doctor.get_full_name|default:appointment.doctor.username }}</p>
+                    <p class="text-sm text-gray-500">{{ appointment.appointment_date|date:"M d, Y H:i" }}</p>
+                </div>
+                <span class="px-2 py-1 text-xs rounded-full 
+                    {% if appointment.status == 'completed' %}bg-green-100 text-green-800
+                    {% elif appointment.status == 'cancelled' %}bg-red-100 text-red-800
+                    {% else %}bg-blue-100 text-blue-800{% endif %}">
+                    {{ appointment.get_status_display }}
+                </span>
+            </div>
+            {% empty %}
+            <p class="text-gray-500">No recent appointments</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Low Stock Alert -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold mb-4">Low Stock Alerts</h3>
+        <div class="space-y-4">
+            {% for item in low_stock_items_list %}
+            <div class="flex items-center justify-between p-3 border rounded-lg {% if item.is_low_stock %}bg-yellow-50 border-yellow-200{% endif %}">
+                <div>
+                    <h4 class="font-medium">{{ item.medicine.name }}</h4>
+                    <p class="text-sm text-gray-500">Batch: {{ item.batch_number }}</p>
+                    <p class="text-sm text-gray-500">Current Stock: {{ item.quantity }}</p>
+                </div>
+                <div class="text-right">
+                    <span class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">
+                        Low Stock
+                    </span>
+                    <p class="text-sm text-gray-500 mt-1">Min: {{ item.min_stock_level }}</p>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-gray-500">No low stock items</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Patient Registration Chart
+const patientCtx = document.getElementById('patientChart').getContext('2d');
+const patientChart = new Chart(patientCtx, {
+    type: 'line',
+    data: {
+        labels: {{ months|safe }},
+        datasets: [{
+            label: 'Patient Registrations',
+            data: {{ patient_counts|safe }},
+            borderColor: 'rgb(59, 130, 246)',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            tension: 0.1,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'top',
+            }
+        }
+    }
+});
+
+// Appointment Status Chart
+const appointmentCtx = document.getElementById('appointmentChart').getContext('2d');
+const appointmentChart = new Chart(appointmentCtx, {
+    type: 'doughnut',
+    data: {
+        labels: {{ status_labels|safe }},
+        datasets: [{
+            data: {{ status_counts|safe }},
+            backgroundColor: [
+                'rgb(59, 130, 246)',
+                'rgb(16, 185, 129)',
+                'rgb(245, 158, 11)',
+                'rgb(99, 102, 241)',
+                'rgb(239, 68, 68)',
+                'rgb(156, 163, 175)'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'bottom',
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

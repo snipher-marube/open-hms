@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}HMS - Clinic Management System{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-gray-100">
+    <!-- Navigation -->
+    <nav class="bg-blue-600 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <h1 class="text-2xl font-bold">Clinic HMS</h1>
+                    <div class="hidden md:flex space-x-4">
+                        <a href="{% url 'dashboard' %}" class="hover:bg-blue-700 px-3 py-2 rounded">Dashboard</a>
+                        <a href="#" class="hover:bg-blue-700 px-3 py-2 rounded">Patients</a>
+                        <a href="#" class="hover:bg-blue-700 px-3 py-2 rounded">Appointments</a>
+                        <a href="#" class="hover:bg-blue-700 px-3 py-2 rounded">Inventory</a>
+                        <a href="#" class="hover:bg-blue-700 px-3 py-2 rounded">Reports</a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span>Welcome, {{ request.user.get_full_name|default:request.user.username }}</span>
+                    <a href="{% url 'logout' %}" class="bg-blue-700 hover:bg-blue-800 px-4 py-2 rounded">Logout</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Navigation -->
+    <div class="md:hidden bg-blue-500 text-white">
+        <div class="flex overflow-x-auto space-x-4 px-4 py-2">
+            <a href="{% url 'dashboard' %}" class="whitespace-nowrap">Dashboard</a>
+            <a href="#" class="whitespace-nowrap">Patients</a>
+            <a href="#" class="whitespace-nowrap">Appointments</a>
+            <a href="#" class="whitespace-nowrap">Inventory</a>
+            <a href="#" class="whitespace-nowrap">Reports</a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 py-6">
+        {% if messages %}
+            <div class="mb-6">
+                {% for message in messages %}
+                    <div class="p-4 rounded {% if message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% block content %}
+        {% endblock %}
+    </div>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
