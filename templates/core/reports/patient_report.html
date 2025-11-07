@@ -1,0 +1,341 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Patient Reports - HMS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        transition: all 0.3s ease;
+        border-left: 4px solid;
+    }
+    .chart-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+    }
+    .table-responsive {
+        overflow-x: auto;
+    }
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+        <div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Total Patients</p>
+                    <p class="text-2xl font-bold text-blue-600">{{ total_patients }}</p>
+                </div>
+                <div class="p-3 bg-blue-100 rounded-lg">
+                    <span class="text-2xl">👥</span>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">All time</p>
+        </div>
+
+        <div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">New Patients</p>
+                    <p class="text-2xl font-bold text-green-600">{{ new_patients }}</p>
+                </div>
+                <div class="p-3 bg-green-100 rounded-lg">
+                    <span class="text-2xl">🆕</span>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">This period</p>
+        </div>
+
+        <div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-purple-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Avg Age</p>
+                    <p class="text-2xl font-bold text-purple-600">
+                        {% with age_groups=age_groups %}
+                            {% if age_groups %}
+                                {% for group in age_groups %}
+                                    {% if forloop.first %}{{ group.age_group }}{% endif %}
+                                {% endfor %}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        {% endwith %}
+                    </p>
+                </div>
+                <div class="p-3 bg-purple-100 rounded-lg">
+                    <span class="text-2xl">📅</span>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">Most common age group</p>
+        </div>
+
+        <div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-orange-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Gender Ratio</p>
+                    <p class="text-2xl font-bold text-orange-600">
+                        {% with genders=gender_distribution %}
+                            {% if genders %}
+                                {% for gender in genders %}
+                                    {% if gender.gender == 'M' %}{{ gender.count }}{% endif %}
+                                {% endfor %}
+                                :
+                                {% for gender in genders %}
+                                    {% if gender.gender == 'F' %}{{ gender.count }}{% endif %}
+                                {% endfor %}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        {% endwith %}
+                    </p>
+                </div>
+                <div class="p-3 bg-orange-100 rounded-lg">
+                    <span class="text-2xl">⚥</span>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">Male:Female</p>
+        </div>
+    </div>
+
+    <!-- Charts and Detailed Data -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <!-- Registration Trends -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Patient Registration Trends</h3>
+            <div class="chart-container">
+                <canvas id="registrationChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Gender Distribution -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Gender Distribution</h3>
+            <div class="chart-container">
+                <canvas id="genderChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Age Distribution -->
+    <div class="bg-white rounded-lg shadow p-6 mb-8">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Age Group Distribution</h3>
+        <div class="chart-container">
+            <canvas id="ageChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Top Conditions -->
+    <div class="bg-white rounded-lg shadow p-6 mb-8">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Top Medical Conditions</h3>
+        <div class="table-responsive">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Diagnosis
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Cases
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Percentage
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for condition in top_conditions %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {{ condition.diagnosis|default:"Not Specified" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ condition.count }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ condition.count|floatformat:2 }}%
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">
+                            No medical records found for this period
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Patient Demographics Details -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Gender Distribution Details -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Gender Statistics</h3>
+            <div class="space-y-4">
+                {% for gender in gender_distribution %}
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <span class="text-blue-600 text-sm">
+                                {% if gender.gender == 'M' %}♂{% elif gender.gender == 'F' %}♀{% else %}⚧{% endif %}
+                            </span>
+                        </div>
+                        <span class="font-medium text-gray-700">
+                            {% if gender.gender == 'M' %}Male
+                            {% elif gender.gender == 'F' %}Female
+                            {% else %}Other{% endif %}
+                        </span>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-lg font-bold text-gray-800">{{ gender.count }}</span>
+                        <span class="text-sm text-gray-500 block">
+                            {{ gender.count|floatformat:2 }}%
+                        </span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Age Group Details -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Age Group Statistics</h3>
+            <div class="space-y-4">
+                {% for age_group in age_groups %}
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                            <span class="text-green-600 text-sm">🎂</span>
+                        </div>
+                        <span class="font-medium text-gray-700">{{ age_group.age_group }} years</span>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-lg font-bold text-gray-800">{{ age_group.count }}</span>
+                        <span class="text-sm text-gray-500 block">
+                            {{ age_group.count|floatformat:2 }}%
+                        </span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Summary -->
+    <div class="mt-8 bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Report Summary</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-gray-600">
+            <div>
+                <h4 class="font-medium text-gray-800 mb-2">Key Insights</h4>
+                <ul class="list-disc list-inside space-y-1">
+                    <li>Total patient base: {{ total_patients }} registered patients</li>
+                    <li>{{ new_patients }} new patients registered in selected period</li>
+                    <li>Registration trend analysis available for the period</li>
+                    <li>Demographic breakdown by age and gender</li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-medium text-gray-800 mb-2">Report Information</h4>
+                <ul class="space-y-1">
+                    <li><strong>Generated:</strong> {% now "F d, Y H:i" %}</li>
+                    <li><strong>Period:</strong> {{ start_date|date:"M d, Y" }} to {{ end_date|date:"M d, Y" }}</li>
+                    <li><strong>Report Type:</strong> Patient Analytics</li>
+                    <li><strong>Data Source:</strong> Patient & Medical Records</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Registration Trends Chart
+    const registrationCtx = document.getElementById('registrationChart').getContext('2d');
+    const registrationChart = new Chart(registrationCtx, {
+        type: 'line',
+        data: {
+            labels: [{% for reg in registrations %}'{{ reg.month }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+            datasets: [{
+                label: 'Patient Registrations',
+                data: [{% for reg in registrations %}{{ reg.count }}{% if not forloop.last %},{% endif %}{% endfor %}],
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true
+                }
+            }
+        }
+    });
+
+    // Gender Distribution Chart
+    const genderCtx = document.getElementById('genderChart').getContext('2d');
+    const genderChart = new Chart(genderCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [{% for gender in gender_distribution %}
+                '{% if gender.gender == "M" %}Male{% elif gender.gender == "F" %}Female{% else %}Other{% endif %}'
+                {% if not forloop.last %},{% endif %}{% endfor %}],
+            datasets: [{
+                data: [{% for gender in gender_distribution %}{{ gender.count }}{% if not forloop.last %},{% endif %}{% endfor %}],
+                backgroundColor: [
+                    '#3b82f6', '#ef4444', '#10b981'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    // Age Distribution Chart
+    const ageCtx = document.getElementById('ageChart').getContext('2d');
+    const ageChart = new Chart(ageCtx, {
+        type: 'bar',
+        data: {
+            labels: [{% for age in age_groups %}'{{ age.age_group }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+            datasets: [{
+                label: 'Patients',
+                data: [{% for age in age_groups %}{{ age.count }}{% if not forloop.last %},{% endif %}{% endfor %}],
+                backgroundColor: '#8b5cf6'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

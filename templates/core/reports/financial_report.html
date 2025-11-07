@@ -1,0 +1,455 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Financial Reports - HMS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        transition: all 0.3s ease;
+        border-left: 4px solid;
+    }
+    .chart-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+    }
+    .table-responsive {
+        overflow-x: auto;
+    }
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+    .status-paid { background-color: #10b981; color: white; }
+    .status-pending { background-color: #f59e0b; color: white; }
+    .status-partial { background-color: #3b82f6; color: white; }
+    
+    .revenue-trend {
+        background: linear-gradient(90deg, #10b981, #3b82f6);
+    }
+    
+    .payment-method-card {
+        border-left: 4px solid;
+        transition: transform 0.2s ease;
+    }
+    
+    .payment-method-card:hover {
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    
+
+    <!-- Financial Alerts -->
+    {% if outstanding_bills > 0 %}
+    <div class="grid grid-cols-1 gap-4 mb-8">
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <span class="text-2xl">⚠️</span>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-yellow-800">Outstanding Payments</h3>
+                    <p class="text-yellow-700 text-sm mt-1">
+                        ${{ outstanding_bills|floatformat:2 }} in pending bills require collection
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+        <div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Total Revenue</p>
+                    <p class="text-2xl font-bold text-green-600">${{ total_revenue|floatformat:2 }}</p>
+                </div>
+                <div class="p-3 bg-green-100 rounded-lg">
+                    <span class="text-2xl">💰</span>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">This period</p>
+        </div>
+
+        <div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Outstanding</p>
+                    <p class="text-2xl font-bold text-blue-600">${{ outstanding_bills|floatformat:2 }}</p>
+                </div>
+                <div class="p-3 bg-blue-100 rounded-lg">
+                    <span class="text-2xl">📋</span>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">Pending collection</p>
+        </div>
+
+        <div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-purple-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Total Bills</p>
+                    <p class="text-2xl font-bold text-purple-600">{{ total_bills }}</p>
+                </div>
+                <div class="p-3 bg-purple-100 rounded-lg">
+                    <span class="text-2xl">🧾</span>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">Generated</p>
+        </div>
+
+        <div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-orange-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Success Rate</p>
+                    <p class="text-2xl font-bold text-orange-600">{{ payment_success_rate|floatformat:1 }}%</p>
+                </div>
+                <div class="p-3 bg-orange-100 rounded-lg">
+                    <span class="text-2xl">📈</span>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">Payment collection</p>
+        </div>
+    </div>
+
+    <!-- Charts and Detailed Data -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <!-- Revenue Trends -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Revenue Trends</h3>
+            <div class="chart-container">
+                <canvas id="revenueChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Payment Methods -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Payment Methods</h3>
+            <div class="chart-container">
+                <canvas id="paymentMethodsChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Method Details -->
+    <div class="bg-white rounded-lg shadow p-6 mb-8">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Payment Method Breakdown</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {% for method in revenue_by_method %}
+            <div class="payment-method-card bg-gray-50 rounded-lg p-4 
+                {% if method.payment_method == 'cash' %}border-blue-400
+                {% elif method.payment_method == 'card' %}border-purple-400
+                {% elif method.payment_method == 'insurance' %}border-green-400
+                {% else %}border-orange-400{% endif %}">
+                <div class="text-center">
+                    <div class="text-2xl mb-2">
+                        {% if method.payment_method == 'cash' %}💵
+                        {% elif method.payment_method == 'card' %}💳
+                        {% elif method.payment_method == 'insurance' %}🏥
+                        {% else %}🌐{% endif %}
+                    </div>
+                    <h4 class="font-semibold text-gray-800 capitalize">{{ method.payment_method }}</h4>
+                    <p class="text-lg font-bold text-gray-900 mt-1">${{ method.total|floatformat:2 }}</p>
+                    <p class="text-sm text-gray-600">
+                        {{ method.total|floatformat:1 }}% of total
+                    </p>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-span-4 text-center py-8 text-gray-500">
+                No payment data available for this period
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Monthly Revenue Details -->
+    <div class="bg-white rounded-lg shadow p-6 mb-8">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Monthly Revenue Details</h3>
+        <div class="table-responsive">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Month
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Revenue
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Percentage
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Trend
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for month in monthly_revenue %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {{ month.month }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            ${{ month.total|floatformat:2 }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ month.total|floatformat:1 }}%
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                                    <div class="bg-green-600 h-2 rounded-full" 
+                                         style="width: {% widthratio month.total total_revenue 100 %}%"></div>
+                                </div>
+                                <span class="text-sm text-gray-500">
+                                    {% widthratio month.total total_revenue 100 %}%
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">
+                            No monthly revenue data available
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Daily Revenue Trends -->
+    <div class="bg-white rounded-lg shadow p-6 mb-8">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Daily Revenue Trends</h3>
+        <div class="table-responsive">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Date
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Revenue
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Day of Week
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for day in daily_revenue %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {{ day.day }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            ${{ day.total|floatformat:2 }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {% with day_date=day.day|date:"Y-m-d" %}
+                                {{ day_date|date:"l" }}
+                            {% endwith %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">
+                            No daily revenue data available
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Financial Health Overview -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <!-- Collection Performance -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Collection Performance</h3>
+            <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium text-gray-700">Paid Bills</span>
+                    <span class="text-lg font-bold text-green-600">{{ paid_bills }}</span>
+                </div>
+                <div class="progress-bar bg-gray-200 rounded-full h-2">
+                    <div class="bg-green-600 h-2 rounded-full" 
+                         style="width: {% widthratio paid_bills total_bills 100 %}%"></div>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium text-gray-700">Pending Bills</span>
+                    <span class="text-lg font-bold text-yellow-600">{{ pending_bills_count }}</span>
+                </div>
+                <div class="progress-bar bg-gray-200 rounded-full h-2">
+                    <div class="bg-yellow-600 h-2 rounded-full" 
+                         style="width: {% widthratio pending_bills_count total_bills 100 %}%"></div>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium text-gray-700">Collection Rate</span>
+                    <span class="text-lg font-bold text-blue-600">{{ payment_success_rate|floatformat:1 }}%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Financial Insights -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Financial Insights</h3>
+            <div class="space-y-3">
+                {% if outstanding_bills > 0 %}
+                <div class="flex items-start space-x-3 p-3 bg-yellow-50 rounded-lg">
+                    <div class="w-6 h-6 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span class="text-yellow-600 text-sm">💡</span>
+                    </div>
+                    <div>
+                        <h4 class="font-medium text-yellow-800">Collections Needed</h4>
+                        <p class="text-yellow-700 text-sm">${{ outstanding_bills|floatformat:2 }} in outstanding payments</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if payment_success_rate >= 80 %}
+                <div class="flex items-start space-x-3 p-3 bg-green-50 rounded-lg">
+                    <div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span class="text-green-600 text-sm">✅</span>
+                    </div>
+                    <div>
+                        <h4 class="font-medium text-green-800">Excellent Collection</h4>
+                        <p class="text-green-700 text-sm">High payment success rate of {{ payment_success_rate|floatformat:1 }}%</p>
+                    </div>
+                </div>
+                {% elif payment_success_rate >= 60 %}
+                <div class="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg">
+                    <div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span class="text-blue-600 text-sm">📊</span>
+                    </div>
+                    <div>
+                        <h4 class="font-medium text-blue-800">Good Performance</h4>
+                        <p class="text-blue-700 text-sm">Payment success rate is {{ payment_success_rate|floatformat:1 }}%</p>
+                    </div>
+                </div>
+                {% else %}
+                <div class="flex items-start space-x-3 p-3 bg-orange-50 rounded-lg">
+                    <div class="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span class="text-orange-600 text-sm">📉</span>
+                    </div>
+                    <div>
+                        <h4 class="font-medium text-orange-800">Improvement Needed</h4>
+                        <p class="text-orange-700 text-sm">Consider reviewing collection processes</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Summary -->
+    <div class="mt-8 bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Report Summary</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-gray-600">
+            <div>
+                <h4 class="font-medium text-gray-800 mb-2">Key Financial Metrics</h4>
+                <ul class="list-disc list-inside space-y-1">
+                    <li>Total revenue: ${{ total_revenue|floatformat:2 }}</li>
+                    <li>Outstanding payments: ${{ outstanding_bills|floatformat:2 }}</li>
+                    <li>Payment success rate: {{ payment_success_rate|floatformat:1 }}%</li>
+                    <li>{{ total_bills }} bills generated in the period</li>
+                    <li>Revenue distributed across {{ revenue_by_method|length }} payment methods</li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-medium text-gray-800 mb-2">Report Information</h4>
+                <ul class="space-y-1">
+                    <li><strong>Generated:</strong> {% now "F d, Y H:i" %}</li>
+                    <li><strong>Period:</strong> {{ start_date|date:"M d, Y" }} to {{ end_date|date:"M d, Y" }}</li>
+                    <li><strong>Report Type:</strong> Financial Analytics</li>
+                    <li><strong>Data Source:</strong> Bills & Payments</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Revenue Trends Chart
+    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+    const revenueChart = new Chart(revenueCtx, {
+        type: 'line',
+        data: {
+            labels: [{% for month in monthly_revenue %}'{{ month.month }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+            datasets: [{
+                label: 'Monthly Revenue ($)',
+                data: [{% for month in monthly_revenue %}{{ month.total }}{% if not forloop.last %},{% endif %}{% endfor %}],
+                borderColor: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Revenue ($)'
+                    }
+                }
+            }
+        }
+    });
+
+    // Payment Methods Chart
+    const paymentCtx = document.getElementById('paymentMethodsChart').getContext('2d');
+    const paymentChart = new Chart(paymentCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [{% for method in revenue_by_method %}'{{ method.payment_method|title }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+            datasets: [{
+                data: [{% for method in revenue_by_method %}{{ method.total }}{% if not forloop.last %},{% endif %}{% endfor %}],
+                backgroundColor: [
+                    '#3b82f6', // cash - blue
+                    '#8b5cf6', // card - purple
+                    '#10b981', // insurance - green
+                    '#f59e0b', // online - amber
+                    '#ef4444'  // other - red
+                ],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

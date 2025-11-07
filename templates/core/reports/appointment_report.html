@@ -1,0 +1,449 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Appointment Reports - HMS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        transition: all 0.3s ease;
+        border-left: 4px solid;
+    }
+    .chart-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+    }
+    .table-responsive {
+        overflow-x: auto;
+    }
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+    .status-completed { background-color: #10b981; color: white; }
+    .status-scheduled { background-color: #3b82f6; color: white; }
+    .status-cancelled { background-color: #ef4444; color: white; }
+    .status-no-show { background-color: #6b7280; color: white; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    
+
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+        <div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Total Appointments</p>
+                    <p class="text-2xl font-bold text-blue-600">{{ total_appointments }}</p>
+                </div>
+                <div class="p-3 bg-blue-100 rounded-lg">
+                    <span class="text-2xl">📅</span>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">This period</p>
+        </div>
+
+        <div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Completion Rate</p>
+                    <p class="text-2xl font-bold text-green-600">{{ completion_rate|floatformat:1 }}%</p>
+                </div>
+                <div class="p-3 bg-green-100 rounded-lg">
+                    <span class="text-2xl">✅</span>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">Successful appointments</p>
+        </div>
+
+        <div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-purple-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Completed</p>
+                    <p class="text-2xl font-bold text-purple-600">
+                        {% for status in status_distribution %}
+                            {% if status.status == 'completed' %}{{ status.count }}{% endif %}
+                        {% endfor %}
+                    </p>
+                </div>
+                <div class="p-3 bg-purple-100 rounded-lg">
+                    <span class="text-2xl">🎯</span>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">Finished appointments</p>
+        </div>
+
+        <div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-orange-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Cancellation Rate</p>
+                    <p class="text-2xl font-bold text-orange-600">
+                        {% for status in status_distribution %}
+                            {% if status.status == 'cancelled' %}
+                                {{ status.count|floatformat:1 }}%
+                            {% endif %}
+                        {% endfor %}
+                    </p>
+                </div>
+                <div class="p-3 bg-orange-100 rounded-lg">
+                    <span class="text-2xl">❌</span>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">Cancelled appointments</p>
+        </div>
+    </div>
+
+    <!-- Charts and Detailed Data -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <!-- Status Distribution -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Appointment Status Distribution</h3>
+            <div class="chart-container">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Daily Trends -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Daily Appointment Trends</h3>
+            <div class="chart-container">
+                <canvas id="dailyTrendsChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Distribution Details -->
+    <div class="bg-white rounded-lg shadow p-6 mb-8">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Appointment Status Breakdown</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {% for status in status_distribution %}
+            <div class="text-center p-4 bg-gray-50 rounded-lg">
+                <div class="text-2xl font-bold 
+                    {% if status.status == 'completed' %}text-green-600
+                    {% elif status.status == 'scheduled' %}text-blue-600
+                    {% elif status.status == 'cancelled' %}text-red-600
+                    {% else %}text-gray-600{% endif %}">
+                    {{ status.count }}
+                </div>
+                <div class="text-sm font-medium text-gray-700 capitalize">{{ status.status }}</div>
+                <div class="text-xs text-gray-500">
+                    {{ status.count|floatformat:1 }}%
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Doctor Performance -->
+    <div class="bg-white rounded-lg shadow p-6 mb-8">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Doctor Performance</h3>
+        <div class="table-responsive">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Doctor
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Total Appointments
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Completed
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Completion Rate
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Cancellation Rate
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for doctor in doctor_performance %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <span class="text-blue-600 font-semibold">
+                                        {{ doctor.doctor__first_name|first }}{{ doctor.doctor__last_name|first }}
+                                    </span>
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900">
+                                        Dr. {{ doctor.doctor__first_name }} {{ doctor.doctor__last_name }}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ doctor.total_appointments }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <span class="text-green-600 font-semibold">{{ doctor.completed }}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {% with completion_rate=doctor.completed|floatformat:2 %}
+                                {% widthratio doctor.completed doctor.total_appointments 100 as rate %}
+                                <span class="{% if rate >= 80 %}text-green-600{% elif rate >= 60 %}text-yellow-600{% else %}text-red-600{% endif %} font-semibold">
+                                    {{ rate }}%
+                                </span>
+                            {% endwith %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <span class="{% if doctor.cancellation_rate < 10 %}text-green-600{% elif doctor.cancellation_rate < 20 %}text-yellow-600{% else %}text-red-600{% endif %} font-semibold">
+                                {{ doctor.cancellation_rate|floatformat:1 }}%
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
+                            No appointment data available for this period
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Daily Trends Table -->
+    <div class="bg-white rounded-lg shadow p-6 mb-8">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Daily Appointment Details</h3>
+        <div class="table-responsive">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Date
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Appointments
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Trend
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for day in daily_trends %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {{ day.day }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ day.count }} appointments
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="w-24 bg-gray-200 rounded-full h-2">
+                                    <div class="bg-blue-600 h-2 rounded-full" 
+                                         style="width: {% widthratio day.count daily_trends_max 100 %}%"></div>
+                                </div>
+                                <span class="ml-2 text-xs text-gray-500">
+                                    {% widthratio day.count daily_trends_max 100 %}%
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">
+                            No daily trend data available
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <!-- Performance Insights -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Performance Insights</h3>
+            <div class="space-y-4">
+                <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <span class="text-blue-600">📊</span>
+                        </div>
+                        <span class="font-medium text-blue-700">Overall Efficiency</span>
+                    </div>
+                    <span class="text-blue-600 font-bold">{{ completion_rate|floatformat:1 }}%</span>
+                </div>
+
+                <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                            <span class="text-green-600">⭐</span>
+                        </div>
+                        <span class="font-medium text-green-700">Top Performer</span>
+                    </div>
+                    <span class="text-green-600 font-bold text-sm">
+                        {% with top_doc=doctor_performance|first %}
+                            {% if top_doc %}Dr. {{ top_doc.doctor__first_name }} {{ top_doc.doctor__last_name }}{% else %}N/A{% endif %}
+                        {% endwith %}
+                    </span>
+                </div>
+
+                <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+                            <span class="text-red-600">📉</span>
+                        </div>
+                        <span class="font-medium text-red-700">Cancellation Impact</span>
+                    </div>
+                    <span class="text-red-600 font-bold">
+                        {% for status in status_distribution %}
+                            {% if status.status == 'cancelled' %}{{ status.count }} apps{% endif %}
+                        {% endfor %}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Busiest Days -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Busiest Days</h3>
+            <div class="space-y-3">
+                {% for day in daily_trends|dictsortreversed:"count"|slice:":5" %}
+                <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <span class="text-purple-600">🔥</span>
+                        </div>
+                        <span class="font-medium text-gray-700">{{ day.day }}</span>
+                    </div>
+                    <span class="text-purple-600 font-bold">{{ day.count }} apps</span>
+                </div>
+                {% empty %}
+                <div class="text-center text-gray-500 py-4">
+                    No daily data available
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Summary -->
+    <div class="mt-8 bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Report Summary</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-gray-600">
+            <div>
+                <h4 class="font-medium text-gray-800 mb-2">Key Findings</h4>
+                <ul class="list-disc list-inside space-y-1">
+                    <li>Total of {{ total_appointments }} appointments in the selected period</li>
+                    <li>Overall completion rate of {{ completion_rate|floatformat:1 }}%</li>
+                    <li>Appointments distributed across {{ doctor_performance|length }} doctors</li>
+                    <li>Daily appointment trends analyzed for optimization</li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-medium text-gray-800 mb-2">Report Information</h4>
+                <ul class="space-y-1">
+                    <li><strong>Generated:</strong> {% now "F d, Y H:i" %}</li>
+                    <li><strong>Period:</strong> {{ start_date|date:"M d, Y" }} to {{ end_date|date:"M d, Y" }}</li>
+                    <li><strong>Report Type:</strong> Appointment Analytics</li>
+                    <li><strong>Data Source:</strong> Appointment Records</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Status Distribution Chart
+    const statusCtx = document.getElementById('statusChart').getContext('2d');
+    const statusChart = new Chart(statusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [{% for status in status_distribution %}'{{ status.status|title }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+            datasets: [{
+                data: [{% for status in status_distribution %}{{ status.count }}{% if not forloop.last %},{% endif %}{% endfor %}],
+                backgroundColor: [
+                    '#10b981', // completed - green
+                    '#3b82f6', // scheduled - blue
+                    '#ef4444', // cancelled - red
+                    '#6b7280', // no-show - gray
+                    '#f59e0b', // other - amber
+                ],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.raw || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = Math.round((value / total) * 100);
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Daily Trends Chart
+    const dailyCtx = document.getElementById('dailyTrendsChart').getContext('2d');
+    const dailyChart = new Chart(dailyCtx, {
+        type: 'line',
+        data: {
+            labels: [{% for day in daily_trends %}'{{ day.day }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+            datasets: [{
+                label: 'Appointments',
+                data: [{% for day in daily_trends %}{{ day.count }}{% if not forloop.last %},{% endif %}{% endfor %}],
+                borderColor: '#8b5cf6',
+                backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Appointments'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Date'
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     # Third party
     'crispy_forms',
     'crispy_tailwind',
+    'import_export',
 ]
 
 CRISPY_ALLOWED_TEMPLATE_PACKS = "tailwind"

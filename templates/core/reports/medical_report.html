@@ -1,0 +1,466 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Medical Reports - HMS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        transition: all 0.3s ease;
+        border-left: 4px solid;
+    }
+    .chart-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+    }
+    .table-responsive {
+        overflow-x: auto;
+    }
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+    .diagnosis-tag {
+        background-color: #e0e7ff;
+        color: #3730a3;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.375rem;
+        font-size: 0.75rem;
+    }
+    .treatment-card {
+        border-left: 4px solid #10b981;
+        transition: transform 0.2s ease;
+    }
+    .treatment-card:hover {
+        transform: translateY(-2px);
+    }
+    
+    .progress-bar {
+        height: 8px;
+        border-radius: 4px;
+        overflow: hidden;
+        background-color: #e5e7eb;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        transition: width 0.3s ease;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    
+
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+        <div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Total Visits</p>
+                    <p class="text-2xl font-bold text-blue-600">{{ total_visits }}</p>
+                </div>
+                <div class="p-3 bg-blue-100 rounded-lg">
+                    <span class="text-2xl">🏥</span>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">Medical consultations</p>
+        </div>
+
+        <div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Prescriptions</p>
+                    <p class="text-2xl font-bold text-green-600">{{ total_prescriptions }}</p>
+                </div>
+                <div class="p-3 bg-green-100 rounded-lg">
+                    <span class="text-2xl">💊</span>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">Medications prescribed</p>
+        </div>
+
+        <div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-purple-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Prescription Rate</p>
+                    <p class="text-2xl font-bold text-purple-600">{{ prescription_rate|floatformat:1 }}%</p>
+                </div>
+                <div class="p-3 bg-purple-100 rounded-lg">
+                    <span class="text-2xl">📝</span>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">Visits with prescriptions</p>
+        </div>
+
+        <div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-orange-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Unique Diagnoses</p>
+                    <p class="text-2xl font-bold text-orange-600">{{ common_diagnoses|length }}</p>
+                </div>
+                <div class="p-3 bg-orange-100 rounded-lg">
+                    <span class="text-2xl">🔍</span>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">Different conditions treated</p>
+        </div>
+    </div>
+
+    <!-- Charts and Detailed Data -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <!-- Common Diagnoses -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Common Diagnoses</h3>
+            <div class="chart-container">
+                <canvas id="diagnosesChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Treatment Patterns -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Treatment Distribution</h3>
+            <div class="chart-container">
+                <canvas id="treatmentsChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Common Diagnoses Details -->
+    <div class="bg-white rounded-lg shadow p-6 mb-8">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Top Diagnoses Analysis</h3>
+        <div class="table-responsive">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Rank
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Diagnosis
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Cases
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Percentage
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Frequency
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for diagnosis in common_diagnoses %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                {% if forloop.counter == 1 %}bg-yellow-100 text-yellow-800
+                                {% elif forloop.counter == 2 %}bg-gray-100 text-gray-800
+                                {% elif forloop.counter == 3 %}bg-orange-100 text-orange-800
+                                {% else %}bg-blue-100 text-blue-800{% endif %}">
+                                #{{ forloop.counter }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {{ diagnosis.diagnosis|default:"Not Specified"|truncatewords:8 }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ diagnosis.count }} cases
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ diagnosis.count|floatformat:1 }}%
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                                    <div class="bg-blue-600 h-2 rounded-full" 
+                                         style="width: {% widthratio diagnosis.count total_visits 100 %}%"></div>
+                                </div>
+                                <span class="text-sm text-gray-500">
+                                    {% widthratio diagnosis.count total_visits 100 %}%
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
+                            No diagnosis data available for this period
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Treatment Patterns -->
+    <div class="bg-white rounded-lg shadow p-6 mb-8">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Treatment Patterns</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for treatment in treatment_patterns %}
+            <div class="treatment-card bg-white border border-gray-200 rounded-lg p-4">
+                <div class="flex items-start justify-between mb-3">
+                    <div class="flex-1">
+                        <h4 class="font-semibold text-gray-800 text-sm mb-2">
+                            {{ treatment.treatment|default:"General Treatment"|truncatewords:6 }}
+                        </h4>
+                        <p class="text-2xl font-bold text-green-600">{{ treatment.count }}</p>
+                        <p class="text-xs text-gray-500 mt-1">applications</p>
+                    </div>
+                    <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span class="text-green-600">💊</span>
+                    </div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill bg-green-500" 
+                         style="width: {% widthratio treatment.count total_visits 100 %}%"></div>
+                </div>
+                <p class="text-xs text-gray-500 mt-2 text-right">
+                    {% widthratio treatment.count total_visits 100 %}% of visits
+                </p>
+            </div>
+            {% empty %}
+            <div class="col-span-3 text-center py-8 text-gray-500">
+                No treatment pattern data available
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Medical Insights -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <!-- Prescription Analysis -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Prescription Analysis</h3>
+            <div class="space-y-6">
+                <div class="text-center">
+                    <div class="inline-flex items-center justify-center w-20 h-20 bg-blue-100 rounded-full mb-3">
+                        <span class="text-2xl text-blue-600">📊</span>
+                    </div>
+                    <h4 class="text-lg font-bold text-gray-800">{{ prescription_rate|floatformat:1 }}%</h4>
+                    <p class="text-sm text-gray-600">Prescription Rate</p>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="text-center p-3 bg-gray-50 rounded-lg">
+                        <div class="text-xl font-bold text-gray-800">{{ total_visits }}</div>
+                        <div class="text-xs text-gray-600">Total Visits</div>
+                    </div>
+                    <div class="text-center p-3 bg-gray-50 rounded-lg">
+                        <div class="text-xl font-bold text-gray-800">{{ total_prescriptions }}</div>
+                        <div class="text-xs text-gray-600">Prescriptions</div>
+                    </div>
+                </div>
+                
+                <div class="bg-blue-50 rounded-lg p-4">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <span class="text-blue-600">💡</span>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-blue-700">
+                                {% if prescription_rate > 70 %}
+                                High prescription rate indicates comprehensive medical care
+                                {% elif prescription_rate > 40 %}
+                                Moderate prescription rate with balanced treatment approach
+                                {% else %}
+                                Conservative prescription approach
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Health Trends -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Health Trends & Insights</h3>
+            <div class="space-y-4">
+                {% if common_diagnoses %}
+                <div class="flex items-start space-x-3 p-3 bg-green-50 rounded-lg">
+                    <div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span class="text-green-600 text-sm">🔍</span>
+                    </div>
+                    <div>
+                        <h4 class="font-medium text-green-800">Top Condition</h4>
+                        <p class="text-green-700 text-sm">
+                            "{{ common_diagnoses.0.diagnosis|default:"General Checkup" }}" with {{ common_diagnoses.0.count }} cases
+                        </p>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="flex items-start space-x-3 p-3 bg-purple-50 rounded-lg">
+                    <div class="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span class="text-purple-600 text-sm">📈</span>
+                    </div>
+                    <div>
+                        <h4 class="font-medium text-purple-800">Visit Frequency</h4>
+                        <p class="text-purple-700 text-sm">
+                            Average of {% widthratio total_visits 30 1 %} visits per day in the period
+                        </p>
+                    </div>
+                </div>
+
+                {% if treatment_patterns %}
+                <div class="flex items-start space-x-3 p-3 bg-orange-50 rounded-lg">
+                    <div class="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span class="text-orange-600 text-sm">💊</span>
+                    </div>
+                    <div>
+                        <h4 class="font-medium text-orange-800">Common Treatment</h4>
+                        <p class="text-orange-700 text-sm">
+                            "{{ treatment_patterns.0.treatment|default:"General Care"|truncatewords:3 }}" used {{ treatment_patterns.0.count }} times
+                        </p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Diagnosis Categories -->
+    <div class="bg-white rounded-lg shadow p-6 mb-8">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Diagnosis Categories</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            {% for diagnosis in common_diagnoses|slice:":12" %}
+            <div class="diagnosis-tag text-center py-2 px-3">
+                <span class="text-xs font-medium">{{ diagnosis.diagnosis|default:"General"|truncatewords:2 }}</span>
+                <span class="text-xs text-gray-600 block mt-1">{{ diagnosis.count }}</span>
+            </div>
+            {% empty %}
+            <div class="col-span-6 text-center py-4 text-gray-500">
+                No diagnosis categories available
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Medical Performance Metrics -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Medical Performance Overview</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="text-center p-4 bg-blue-50 rounded-lg">
+                <div class="text-2xl font-bold text-blue-600">{{ total_visits }}</div>
+                <div class="text-sm font-medium text-blue-800">Patient Visits</div>
+                <div class="text-xs text-blue-600 mt-1">Medical consultations</div>
+            </div>
+            
+            <div class="text-center p-4 bg-green-50 rounded-lg">
+                <div class="text-2xl font-bold text-green-600">{{ total_prescriptions }}</div>
+                <div class="text-sm font-medium text-green-800">Prescriptions</div>
+                <div class="text-xs text-green-600 mt-1">Medications issued</div>
+            </div>
+            
+            <div class="text-center p-4 bg-purple-50 rounded-lg">
+                <div class="text-2xl font-bold text-purple-600">{{ common_diagnoses|length }}</div>
+                <div class="text-sm font-medium text-purple-800">Conditions Treated</div>
+                <div class="text-xs text-purple-600 mt-1">Unique diagnoses</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Summary -->
+    <div class="mt-8 bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Report Summary</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-gray-600">
+            <div>
+                <h4 class="font-medium text-gray-800 mb-2">Clinical Insights</h4>
+                <ul class="list-disc list-inside space-y-1">
+                    <li>{{ total_visits }} medical consultations conducted</li>
+                    <li>{{ total_prescriptions }} prescriptions issued ({{ prescription_rate|floatformat:1 }}% rate)</li>
+                    <li>{{ common_diagnoses|length }} unique medical conditions diagnosed</li>
+                    <li>Top diagnosis: "{{ common_diagnoses.0.diagnosis|default:"General Checkup" }}"</li>
+                    <li>Comprehensive treatment patterns analyzed</li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-medium text-gray-800 mb-2">Report Information</h4>
+                <ul class="space-y-1">
+                    <li><strong>Generated:</strong> {% now "F d, Y H:i" %}</li>
+                    <li><strong>Period:</strong> {{ start_date|date:"M d, Y" }} to {{ end_date|date:"M d, Y" }}</li>
+                    <li><strong>Report Type:</strong> Medical Analytics</li>
+                    <li><strong>Data Source:</strong> Medical Records & Prescriptions</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Common Diagnoses Chart
+    const diagnosesCtx = document.getElementById('diagnosesChart').getContext('2d');
+    const diagnosesChart = new Chart(diagnosesCtx, {
+        type: 'bar',
+        data: {
+            labels: [{% for diagnosis in common_diagnoses|slice:":10" %}'{{ diagnosis.diagnosis|default:"General"|truncatewords:3 }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+            datasets: [{
+                label: 'Cases',
+                data: [{% for diagnosis in common_diagnoses|slice:":10" %}{{ diagnosis.count }}{% if not forloop.last %},{% endif %}{% endfor %}],
+                backgroundColor: '#3b82f6',
+                borderColor: '#1d4ed8',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Cases'
+                    }
+                }
+            }
+        }
+    });
+
+    // Treatments Chart
+    const treatmentsCtx = document.getElementById('treatmentsChart').getContext('2d');
+    const treatmentsChart = new Chart(treatmentsCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [{% for treatment in treatment_patterns|slice:":5" %}'{{ treatment.treatment|default:"General"|truncatewords:2 }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+            datasets: [{
+                data: [{% for treatment in treatment_patterns|slice:":5" %}{{ treatment.count }}{% if not forloop.last %},{% endif %}{% endfor %}],
+                backgroundColor: [
+                    '#10b981',
+                    '#3b82f6',
+                    '#8b5cf6',
+                    '#f59e0b',
+                    '#ef4444'
+                ],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

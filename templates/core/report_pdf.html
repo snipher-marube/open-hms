@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ report_type|title }} Report - HMS</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+            @top-center {
+                content: "{{ report_type|title }} Report - Hospital Management System";
+                font-size: 12px;
+                color: #666;
+            }
+            @bottom-center {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 10px;
+                color: #666;
+            }
+        }
+        
+        body {
+            font-family: 'DejaVu Sans', Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 2cm;
+            border-bottom: 2px solid #3b82f6;
+            padding-bottom: 0.5cm;
+        }
+        
+        .header h1 {
+            color: #1f2937;
+            font-size: 24px;
+            margin: 0 0 0.2cm 0;
+        }
+        
+        .header .subtitle {
+            color: #6b7280;
+            font-size: 14px;
+            margin: 0;
+        }
+        
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5cm;
+            margin-bottom: 1cm;
+        }
+        
+        .card {
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 0.5cm;
+            text-align: center;
+            background: #f9fafb;
+        }
+        
+        .card .number {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 0.2cm 0;
+        }
+        
+        .card .label {
+            font-size: 10px;
+            color: #6b7280;
+            text-transform: uppercase;
+        }
+        
+        .section {
+            margin-bottom: 1cm;
+            page-break-inside: avoid;
+        }
+        
+        .section-title {
+            background: #3b82f6;
+            color: white;
+            padding: 0.3cm 0.5cm;
+            margin: 0 -0.5cm 0.5cm -0.5cm;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 0.5cm;
+        }
+        
+        th {
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            padding: 0.3cm;
+            text-align: left;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        td {
+            border: 1px solid #d1d5db;
+            padding: 0.3cm;
+            font-size: 10px;
+        }
+        
+        .table-container {
+            margin-bottom: 1cm;
+        }
+        
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5cm;
+            margin-bottom: 1cm;
+        }
+        
+        .stat-item {
+            border: 1px solid #e5e7eb;
+            padding: 0.5cm;
+            border-radius: 4px;
+        }
+        
+        .stat-item .value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #3b82f6;
+        }
+        
+        .stat-item .label {
+            font-size: 10px;
+            color: #6b7280;
+            text-transform: uppercase;
+        }
+        
+        .footer {
+            margin-top: 2cm;
+            padding-top: 0.5cm;
+            border-top: 1px solid #e5e7eb;
+            text-align: center;
+            color: #6b7280;
+            font-size: 10px;
+        }
+        
+        .no-data {
+            text-align: center;
+            color: #6b7280;
+            font-style: italic;
+            padding: 1cm;
+            border: 1px dashed #d1d5db;
+        }
+        
+        .page-break {
+            page-break-before: always;
+        }
+        
+        .chart-placeholder {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            padding: 1cm;
+            text-align: center;
+            color: #6b7280;
+            font-style: italic;
+            margin-bottom: 0.5cm;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ report_type|title }} ANALYTICS REPORT</h1>
+        <p class="subtitle">
+            Period: {{ start_date|date:"F d, Y" }} to {{ end_date|date:"F d, Y" }} | 
+            Generated: {% now "F d, Y H:i" %}
+        </p>
+    </div>
+
+    {% if report_type == 'patient' %}
+        <!-- Patient Report Content -->
+        <div class="summary-cards">
+            <div class="card">
+                <div class="number">{{ total_patients }}</div>
+                <div class="label">Total Patients</div>
+            </div>
+            <div class="card">
+                <div class="number">{{ new_patients }}</div>
+                <div class="label">New Patients</div>
+            </div>
+            <div class="card">
+                <div class="number">
+                    {% for gender in gender_distribution %}
+                        {% if gender.gender == 'M' %}{{ gender.count }}{% endif %}
+                    {% endfor %}
+                </div>
+                <div class="label">Male Patients</div>
+            </div>
+            <div class="card">
+                <div class="number">
+                    {% for gender in gender_distribution %}
+                        {% if gender.gender == 'F' %}{{ gender.count }}{% endif %}
+                    {% endfor %}
+                </div>
+                <div class="label">Female Patients</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">PATIENT REGISTRATION TRENDS</div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Month</th>
+                            <th>Registrations</th>
+                            <th>Cumulative</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for reg in registrations %}
+                        <tr>
+                            <td>{{ reg.month }}</td>
+                            <td>{{ reg.count }}</td>
+                            <td>
+                                {% with cumulative=0 %}
+                                    {% for r in registrations %}
+                                        {% if forloop.counter <= forloop.parentloop.counter %}
+                                            {{ r.count|add:cumulative }}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endwith %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="no-data">No registration data available for this period</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="stat-grid">
+            <div class="section">
+                <div class="section-title">GENDER DISTRIBUTION</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Gender</th>
+                            <th>Count</th>
+                            <th>Percentage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for gender in gender_distribution %}
+                        <tr>
+                            <td>
+                                {% if gender.gender == 'M' %}Male
+                                {% elif gender.gender == 'F' %}Female
+                                {% else %}Other{% endif %}
+                            </td>
+                            <td>{{ gender.count }}</td>
+                            <td>{{ gender.count|floatformat:1 }}%</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="no-data">No gender data available</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="section">
+                <div class="section-title">AGE GROUP DISTRIBUTION</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Age Group</th>
+                            <th>Count</th>
+                            <th>Percentage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for age in age_groups %}
+                        <tr>
+                            <td>{{ age.age_group }} years</td>
+                            <td>{{ age.count }}</td>
+                            <td>{{ age.count|floatformat:1 }}%</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="no-data">No age group data available</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">TOP MEDICAL CONDITIONS</div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Diagnosis</th>
+                            <th>Cases</th>
+                            <th>Percentage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for condition in top_conditions %}
+                        <tr>
+                            <td>{{ condition.diagnosis|default:"Not Specified" }}</td>
+                            <td>{{ condition.count }}</td>
+                            <td>{{ condition.count|floatformat:1 }}%</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="no-data">No medical condition data available for this period</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    {% elif report_type == 'appointment' %}
+        <!-- Appointment Report Content -->
+        <div class="summary-cards">
+            <div class="card">
+                <div class="number">{{ total_appointments }}</div>
+                <div class="label">Total Appointments</div>
+            </div>
+            <div class="card">
+                <div class="number">{{ completion_rate|floatformat:1 }}%</div>
+                <div class="label">Completion Rate</div>
+            </div>
+            <div class="card">
+                <div class="number">
+                    {% for status in status_distribution %}
+                        {% if status.status == 'completed' %}{{ status.count }}{% endif %}
+                    {% endfor %}
+                </div>
+                <div class="label">Completed</div>
+            </div>
+            <div class="card">
+                <div class="number">
+                    {% for status in status_distribution %}
+                        {% if status.status == 'cancelled' %}{{ status.count }}{% endif %}
+                    {% endfor %}
+                </div>
+                <div class="label">Cancelled</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">APPOINTMENT STATUS DISTRIBUTION</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Status</th>
+                        <th>Count</th>
+                        <th>Percentage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for status in status_distribution %}
+                    <tr>
+                        <td>{{ status.status|title }}</td>
+                        <td>{{ status.count }}</td>
+                        <td>{{ status.count|floatformat:1 }}%</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="no-data">No appointment data available</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="section-title">DOCTOR PERFORMANCE</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Doctor</th>
+                        <th>Total Appointments</th>
+                        <th>Completed</th>
+                        <th>Cancellation Rate</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for doctor in doctor_performance %}
+                    <tr>
+                        <td>Dr. {{ doctor.doctor__first_name }} {{ doctor.doctor__last_name }}</td>
+                        <td>{{ doctor.total_appointments }}</td>
+                        <td>{{ doctor.completed }}</td>
+                        <td>{{ doctor.cancellation_rate|floatformat:1 }}%</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="no-data">No doctor performance data available</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    {% elif report_type == 'financial' %}
+        <!-- Financial Report Content -->
+        <div class="summary-cards">
+            <div class="card">
+                <div class="number">${{ total_revenue|floatformat:2 }}</div>
+                <div class="label">Total Revenue</div>
+            </div>
+            <div class="card">
+                <div class="number">${{ outstanding_bills|floatformat:2 }}</div>
+                <div class="label">Outstanding Bills</div>
+            </div>
+            <div class="card">
+                <div class="number">{{ total_bills }}</div>
+                <div class="label">Total Bills</div>
+            </div>
+            <div class="card">
+                <div class="number">
+                    {% for method in revenue_by_method %}
+                        {% if method.payment_method == 'cash' %}${{ method.total|floatformat:2 }}{% endif %}
+                    {% endfor %}
+                </div>
+                <div class="label">Cash Payments</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">REVENUE BY PAYMENT METHOD</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Payment Method</th>
+                        <th>Amount</th>
+                        <th>Percentage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for method in revenue_by_method %}
+                    <tr>
+                        <td>{{ method.payment_method|title }}</td>
+                        <td>${{ method.total|floatformat:2 }}</td>
+                        <td>{{ method.total|floatformat:1 }}%</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="no-data">No payment data available</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="section-title">MONTHLY REVENUE TREND</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Month</th>
+                        <th>Revenue</th>
+                        <th>Cumulative</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for month in monthly_revenue %}
+                    <tr>
+                        <td>{{ month.month }}</td>
+                        <td>${{ month.total|floatformat:2 }}</td>
+                        <td>
+                            {% with cumulative=0 %}
+                                {% for m in monthly_revenue %}
+                                    {% if forloop.counter <= forloop.parentloop.counter %}
+                                        ${{ m.total|add:cumulative|floatformat:2 }}
+                                    {% endif %}
+                                {% endfor %}
+                            {% endwith %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="no-data">No revenue data available for this period</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    {% elif report_type == 'inventory' %}
+        <!-- Inventory Report Content -->
+        <div class="summary-cards">
+            <div class="card">
+                <div class="number">${{ total_inventory_value|floatformat:2 }}</div>
+                <div class="label">Total Value</div>
+            </div>
+            <div class="card">
+                <div class="number">{{ low_stock_count }}</div>
+                <div class="label">Low Stock Items</div>
+            </div>
+            <div class="card">
+                <div class="number">{{ near_expiry_count }}</div>
+                <div class="label">Near Expiry</div>
+            </div>
+            <div class="card">
+                <div class="number">{{ expired_count }}</div>
+                <div class="label">Expired Items</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">CATEGORY DISTRIBUTION</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Items</th>
+                        <th>Total Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for category in category_distribution %}
+                    <tr>
+                        <td>{{ category.category__name|default:"Uncategorized" }}</td>
+                        <td>{{ category.total_items }}</td>
+                        <td>${{ category.total_value|floatformat:2 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="no-data">No category data available</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="section-title">TOP MOVING ITEMS</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Quantity Sold</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in top_moving %}
+                    <tr>
+                        <td>{{ item.inventory_item__medicine__name }}</td>
+                        <td>{{ item.total_sold }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="2" class="no-data">No sales data available</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    {% elif report_type == 'medical' %}
+        <!-- Medical Report Content -->
+        <div class="summary-cards">
+            <div class="card">
+                <div class="number">{{ total_visits }}</div>
+                <div class="label">Total Visits</div>
+            </div>
+            <div class="card">
+                <div class="number">{{ total_prescriptions }}</div>
+                <div class="label">Prescriptions</div>
+            </div>
+            <div class="card">
+                <div class="number">{{ prescription_rate|floatformat:1 }}%</div>
+                <div class="label">Prescription Rate</div>
+            </div>
+            <div class="card">
+                <div class="number">{{ common_diagnoses|length }}</div>
+                <div class="label">Unique Diagnoses</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">COMMON DIAGNOSES</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Diagnosis</th>
+                        <th>Cases</th>
+                        <th>Percentage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for diagnosis in common_diagnoses %}
+                    <tr>
+                        <td>{{ diagnosis.diagnosis|default:"Not Specified" }}</td>
+                        <td>{{ diagnosis.count }}</td>
+                        <td>{{ diagnosis.count|floatformat:1 }}%</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="no-data">No diagnosis data available</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="section-title">TREATMENT PATTERNS</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Treatment</th>
+                        <th>Frequency</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for treatment in treatment_patterns %}
+                    <tr>
+                        <td>{{ treatment.treatment|truncatewords:10 }}</td>
+                        <td>{{ treatment.count }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="2" class="no-data">No treatment data available</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    {% else %}
+        <div class="no-data">
+            <h3>Report type "{{ report_type }}" not supported for PDF export.</h3>
+        </div>
+    {% endif %}
+
+    <div class="footer">
+        <p>Hospital Management System - Confidential Report</p>
+        <p>Generated on {% now "F d, Y \a\t H:i" %} | This report contains confidential information</p>
+    </div>
+</body>
+</html>

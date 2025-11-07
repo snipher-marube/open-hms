@@ -13,5 +13,5 @@ urlpatterns = [
     path('patients/', include('patients.urls')),
     path('appointments/', include('appointments.urls')),
     path('inventory/', include('inventory.urls')),
-    path('reports/', core_views.reports, name='reports'),
+    path('reports/', include('core.urls')),
 ]

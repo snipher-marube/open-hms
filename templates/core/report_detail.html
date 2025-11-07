@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ report_type|title }} Report - HMS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chart-container {
+        position: relative;
+        height: 400px;
+        width: 100%;
+    }
+    .stat-card {
+        transition: all 0.3s ease;
+    }
+    .stat-card:hover {
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Report Header -->
+    <div class="mb-8">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800 capitalize">{{ report_type }} Report</h1>
+                <p class="text-gray-600 mt-2">
+                    Period: {{ start_date|date:"M d, Y" }} - {{ end_date|date:"M d, Y" }}
+                </p>
+            </div>
+            <div class="flex space-x-3">
+                <a href="{% url 'generate-report' report_type %}?format=pdf&start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}"
+                   class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md transition duration-200 flex items-center space-x-2">
+                    <span>📄</span>
+                    <span>Export PDF</span>
+                </a>
+                <a href="{% url 'generate-report' report_type %}?format=excel&start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}"
+                   class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md transition duration-200 flex items-center space-x-2">
+                    <span>📊</span>
+                    <span>Export Excel</span>
+                </a>
+                <a href="{% url 'reports' %}" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md transition duration-200">
+                    Back to Reports
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Content -->
+    {% if report_type == 'patient' %}
+        {% include 'core/reports/patient_report.html' %}
+    {% elif report_type == 'appointment' %}
+        {% include 'core/reports/appointment_report.html' %}
+    {% elif report_type == 'inventory' %}
+        {% include 'core/reports/inventory_report.html' %}
+    {% elif report_type == 'financial' %}
+        {% include 'core/reports/financial_report.html' %}
+    {% elif report_type == 'medical' %}
+        {% include 'core/reports/medical_report.html' %}
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Common chart configuration
+const chartConfig = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: {
+            position: 'bottom',
+        }
+    }
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize charts based on report type
+    {% if report_type == 'patient' %}
+    initializePatientCharts();
+    {% elif report_type == 'appointment' %}
+    initializeAppointmentCharts();
+    {% elif report_type == 'inventory' %}
+    initializeInventoryCharts();
+    {% elif report_type == 'financial' %}
+    initializeFinancialCharts();
+    {% elif report_type == 'medical' %}
+    initializeMedicalCharts();
+    {% endif %}
+});
+
+function initializePatientCharts() {
+    // Patient registration trends chart
+    const regCtx = document.getElementById('patientRegistrationsChart')?.getContext('2d');
+    if (regCtx) {
+        new Chart(regCtx, {
+            type: 'line',
+            data: {
+                labels: {{ registrations|safe }},
+                datasets: [{
+                    label: 'Patient Registrations',
+                    data: {{ registrations_data|safe }},
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: chartConfig
+        });
+    }
+}
+</script>
+{% endblock %}

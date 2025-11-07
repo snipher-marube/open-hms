@@ -1,0 +1,491 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Inventory Reports - HMS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        transition: all 0.3s ease;
+        border-left: 4px solid;
+    }
+    .chart-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+    }
+    .table-responsive {
+        overflow-x: auto;
+    }
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+    .status-low { background-color: #ef4444; color: white; }
+    .status-medium { background-color: #f59e0b; color: white; }
+    .status-good { background-color: #10b981; color: white; }
+    .status-expired { background-color: #6b7280; color: white; }
+    .status-near-expiry { background-color: #f97316; color: white; }
+    
+    .progress-bar {
+        height: 8px;
+        border-radius: 4px;
+        overflow: hidden;
+        background-color: #e5e7eb;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        transition: width 0.3s ease;
+    }
+    
+    .inventory-alert {
+        border-left: 4px solid;
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.8; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    
+
+    <!-- Inventory Alerts -->
+    {% if low_stock_count > 0 or near_expiry_count > 0 or expired_count > 0 %}
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        {% if low_stock_count > 0 %}
+        <div class="inventory-alert bg-red-50 border-red-400 rounded-lg p-4">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <span class="text-2xl">⚠️</span>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-red-800">Low Stock Alert</h3>
+                    <p class="text-red-700 text-sm mt-1">{{ low_stock_count }} items need restocking</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if near_expiry_count > 0 %}
+        <div class="inventory-alert bg-orange-50 border-orange-400 rounded-lg p-4">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <span class="text-2xl">⏰</span>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-orange-800">Near Expiry</h3>
+                    <p class="text-orange-700 text-sm mt-1">{{ near_expiry_count }} items expiring soon</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if expired_count > 0 %}
+        <div class="inventory-alert bg-gray-50 border-gray-400 rounded-lg p-4">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <span class="text-2xl">🚫</span>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-gray-800">Expired Items</h3>
+                    <p class="text-gray-700 text-sm mt-1">{{ expired_count }} items have expired</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+        <div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Total Inventory Value</p>
+                    <p class="text-2xl font-bold text-blue-600">${{ total_inventory_value|floatformat:2 }}</p>
+                </div>
+                <div class="p-3 bg-blue-100 rounded-lg">
+                    <span class="text-2xl">💰</span>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">Current stock value</p>
+        </div>
+
+        <div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Stock Transactions</p>
+                    <p class="text-2xl font-bold text-green-600">{{ total_transactions }}</p>
+                </div>
+                <div class="p-3 bg-green-100 rounded-lg">
+                    <span class="text-2xl">📊</span>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">This period</p>
+        </div>
+
+        <div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-purple-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Low Stock Items</p>
+                    <p class="text-2xl font-bold text-purple-600">{{ low_stock_count }}</p>
+                </div>
+                <div class="p-3 bg-purple-100 rounded-lg">
+                    <span class="text-2xl">📉</span>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">Need restocking</p>
+        </div>
+
+        <div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-orange-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Expiry Alerts</p>
+                    <p class="text-2xl font-bold text-orange-600">{{ near_expiry_count }}</p>
+                </div>
+                <div class="p-3 bg-orange-100 rounded-lg">
+                    <span class="text-2xl">⏰</span>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">Near expiry</p>
+        </div>
+    </div>
+
+    <!-- Charts and Detailed Data -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <!-- Category Distribution -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Inventory Value by Category</h3>
+            <div class="chart-container">
+                <canvas id="categoryChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Stock Movement -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Stock Alert Summary</h3>
+            <div class="chart-container">
+                <canvas id="alertsChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Distribution Details -->
+    <div class="bg-white rounded-lg shadow p-6 mb-8">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Category Distribution Details</h3>
+        <div class="table-responsive">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Category
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Number of Items
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Total Value
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Percentage
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for category in category_distribution %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {{ category.category__name|default:"Uncategorized" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ category.total_items }} items
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            ${{ category.total_value|floatformat:2 }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                                    <div class="bg-blue-600 h-2 rounded-full" 
+                                         style="width: {% widthratio category.total_value total_inventory_value 100 %}%"></div>
+                                </div>
+                                <span class="text-sm text-gray-500">
+                                    {% widthratio category.total_value total_inventory_value 100 %}%
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">
+                            No category data available
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Top Moving Items -->
+    <div class="bg-white rounded-lg shadow p-6 mb-8">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Top Moving Items</h3>
+        <div class="table-responsive">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Item Name
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Quantity Sold
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Movement Rate
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Rank
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for item in top_moving %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {{ item.inventory_item__medicine__name|default:"Unknown Item" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ item.total_sold }} units
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                                    <div class="bg-green-600 h-2 rounded-full" 
+                                         style="width: {% widthratio forloop.counter top_moving|length 100 %}%"></div>
+                                </div>
+                                <span class="text-sm text-gray-500">
+                                    {% widthratio forloop.counter top_moving|length 100 %}%
+                                </span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                {% if forloop.counter == 1 %}bg-yellow-100 text-yellow-800
+                                {% elif forloop.counter == 2 %}bg-gray-100 text-gray-800
+                                {% elif forloop.counter == 3 %}bg-orange-100 text-orange-800
+                                {% else %}bg-blue-100 text-blue-800{% endif %}">
+                                #{{ forloop.counter }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">
+                            No sales data available for this period
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Inventory Health Overview -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <!-- Stock Health -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Inventory Health</h3>
+            <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium text-gray-700">Low Stock Items</span>
+                    <span class="text-lg font-bold text-red-600">{{ low_stock_count }}</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill bg-red-500" 
+                         style="width: {% widthratio low_stock_count category_distribution|length 100 %}%"></div>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium text-gray-700">Near Expiry Items</span>
+                    <span class="text-lg font-bold text-orange-600">{{ near_expiry_count }}</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill bg-orange-500" 
+                         style="width: {% widthratio near_expiry_count category_distribution|length 100 %}%"></div>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium text-gray-700">Expired Items</span>
+                    <span class="text-lg font-bold text-gray-600">{{ expired_count }}</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill bg-gray-500" 
+                         style="width: {% widthratio expired_count category_distribution|length 100 %}%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Recommended Actions</h3>
+            <div class="space-y-3">
+                {% if low_stock_count > 0 %}
+                <div class="flex items-start space-x-3 p-3 bg-red-50 rounded-lg">
+                    <div class="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span class="text-red-600 text-sm">🔄</span>
+                    </div>
+                    <div>
+                        <h4 class="font-medium text-red-800">Restock Needed</h4>
+                        <p class="text-red-700 text-sm">Consider ordering {{ low_stock_count }} low stock items</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if near_expiry_count > 0 %}
+                <div class="flex items-start space-x-3 p-3 bg-orange-50 rounded-lg">
+                    <div class="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span class="text-orange-600 text-sm">⏰</span>
+                    </div>
+                    <div>
+                        <h4 class="font-medium text-orange-800">Expiry Management</h4>
+                        <p class="text-orange-700 text-sm">{{ near_expiry_count }} items need expiry review</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if expired_count > 0 %}
+                <div class="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                    <div class="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span class="text-gray-600 text-sm">🚫</span>
+                    </div>
+                    <div>
+                        <h4 class="font-medium text-gray-800">Disposal Required</h4>
+                        <p class="text-gray-700 text-sm">{{ expired_count }} expired items need disposal</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if low_stock_count == 0 and near_expiry_count == 0 and expired_count == 0 %}
+                <div class="flex items-start space-x-3 p-3 bg-green-50 rounded-lg">
+                    <div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span class="text-green-600 text-sm">✅</span>
+                    </div>
+                    <div>
+                        <h4 class="font-medium text-green-800">Inventory Healthy</h4>
+                        <p class="text-green-700 text-sm">All inventory items are in good condition</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Summary -->
+    <div class="mt-8 bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Report Summary</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-gray-600">
+            <div>
+                <h4 class="font-medium text-gray-800 mb-2">Key Findings</h4>
+                <ul class="list-disc list-inside space-y-1">
+                    <li>Total inventory value: ${{ total_inventory_value|floatformat:2 }}</li>
+                    <li>{{ total_transactions }} stock transactions in the selected period</li>
+                    <li>{{ low_stock_count }} items require immediate restocking</li>
+                    <li>{{ near_expiry_count }} items approaching expiry date</li>
+                    <li>Top {{ top_moving|length }} moving items identified for sales analysis</li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-medium text-gray-800 mb-2">Report Information</h4>
+                <ul class="space-y-1">
+                    <li><strong>Generated:</strong> {% now "F d, Y H:i" %}</li>
+                    <li><strong>Period:</strong> {{ start_date|date:"M d, Y" }} to {{ end_date|date:"M d, Y" }}</li>
+                    <li><strong>Report Type:</strong> Inventory Analytics</li>
+                    <li><strong>Data Source:</strong> Inventory & Stock Transactions</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Category Distribution Chart
+    const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+    const categoryChart = new Chart(categoryCtx, {
+        type: 'bar',
+        data: {
+            labels: [{% for category in category_distribution %}'{{ category.category__name|default:"Uncategorized" }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+            datasets: [{
+                label: 'Inventory Value ($)',
+                data: [{% for category in category_distribution %}{{ category.total_value }}{% if not forloop.last %},{% endif %}{% endfor %}],
+                backgroundColor: '#3b82f6',
+                borderColor: '#1d4ed8',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Value ($)'
+                    }
+                }
+            }
+        }
+    });
+
+    // Alerts Chart
+    const alertsCtx = document.getElementById('alertsChart').getContext('2d');
+    const alertsChart = new Chart(alertsCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Low Stock', 'Near Expiry', 'Expired', 'Healthy'],
+            datasets: [{
+                data: [
+                    {{ low_stock_count }},
+                    {{ near_expiry_count }},
+                    {{ expired_count }},
+                    {% with total=category_distribution|length %}{{ total|add:low_stock_count|add:near_expiry_count|add:expired_count }}{% endwith %}
+                ],
+                backgroundColor: [
+                    '#ef4444', // Low Stock - red
+                    '#f59e0b', // Near Expiry - amber
+                    '#6b7280', // Expired - gray
+                    '#10b981'  // Healthy - green
+                ],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
