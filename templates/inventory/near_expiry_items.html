@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}Near Expiry Items - HMS{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Near Expiry Items</h1>
+            <p class="text-gray-600">Items expiring within the next 30 days</p>
+        </div>
+        <div class="flex space-x-2">
+            <a href="{% url 'inventory-list' %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition duration-200">
+                Back to Inventory
+            </a>
+            <a href="{% url 'expired-items' %}" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md transition duration-200">
+                View Expired
+            </a>
+        </div>
+    </div>
+
+    <div class="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+        <div class="flex items-center">
+            <svg class="w-5 h-5 text-orange-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <p class="text-orange-800">
+                <strong>Warning:</strong> {{ items|length }} item(s) are expiring within the next 30 days.
+            </p>
+        </div>
+    </div>
+</div>
+
+<div class="bg-white rounded-lg shadow overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Medicine</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Batch Number</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expiry Date</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Days Left</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for item in items %}
+                <tr class="{% if item.days_until_expiry <= 7 %}bg-red-50{% elif item.days_until_expiry <= 15 %}bg-orange-50{% else %}bg-yellow-50{% endif %}">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">{{ item.medicine.name }}</div>
+                        <div class="text-sm text-gray-500">{{ item.medicine.generic_name }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.batch_number }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.quantity }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold 
+                        {% if item.days_until_expiry <= 7 %}text-red-600
+                        {% elif item.days_until_expiry <= 15 %}text-orange-600
+                        {% else %}text-yellow-600{% endif %}">
+                        {{ item.expiry_date|date:"M d, Y" }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 text-xs rounded-full 
+                            {% if item.days_until_expiry <= 7 %}bg-red-100 text-red-800
+                            {% elif item.days_until_expiry <= 15 %}bg-orange-100 text-orange-800
+                            {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                            {{ item.days_until_expiry }} days
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${{ item.total_value|floatformat:2 }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium
+                        {% if item.days_until_expiry <= 7 %}text-red-600
+                        {% elif item.days_until_expiry <= 15 %}text-orange-600
+                        {% else %}text-yellow-600{% endif %}">
+                        {% if item.days_until_expiry <= 7 %}High
+                        {% elif item.days_until_expiry <= 15 %}Medium
+                        {% else %}Low{% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="px-6 py-12 text-center">
+                        <div class="text-green-400 mb-4">
+                            <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <p class="text-gray-500 text-lg font-medium">No near expiry items!</p>
+                        <p class="text-gray-400 mt-2">All inventory items have sufficient shelf life.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

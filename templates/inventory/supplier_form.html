@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ title }} - HMS{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">{{ title }}</h1>
+                <p class="text-gray-600 mt-1">Add new supplier to the system</p>
+            </div>
+            <a href="{% url 'supplier-list' %}" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md transition duration-200">
+                Back to Suppliers
+            </a>
+        </div>
+
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            {% if form.errors %}
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                <h3 class="text-red-800 font-semibold mb-2">Please correct the following errors:</h3>
+                <ul class="list-disc list-inside text-red-700 text-sm">
+                    {% for field, errors in form.errors.items %}
+                        {% for error in errors %}
+                            <li>{{ field|title }}: {{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <div class="space-y-6">
+                <!-- Basic Information -->
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold text-blue-800 mb-3">Basic Information</h3>
+                    {{ form.name|as_crispy_field }}
+                    {{ form.contact_person|as_crispy_field }}
+                </div>
+
+                <!-- Contact Information -->
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold text-green-800 mb-3">Contact Information</h3>
+                    {{ form.phone|as_crispy_field }}
+                    {{ form.email|as_crispy_field }}
+                    {{ form.address|as_crispy_field }}
+                </div>
+
+                <!-- Status -->
+                <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold text-purple-800 mb-3">Status</h3>
+                    {{ form.is_active|as_crispy_field }}
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex justify-end space-x-4 pt-6 border-t">
+                <a href="{% url 'supplier-list' %}" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-md transition duration-200">
+                    Cancel
+                </a>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition duration-200">
+                    Save Supplier
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

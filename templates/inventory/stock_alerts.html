@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+
+{% block title %}Stock Alerts - HMS{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Stock Alerts</h1>
+            <p class="text-gray-600">Active alerts and notifications for inventory management</p>
+        </div>
+        <div class="flex space-x-2">
+            <a href="{% url 'inventory-list' %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition duration-200">
+                Back to Inventory
+            </a>
+            <a href="{% url 'inventory-dashboard' %}" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md transition duration-200">
+                Analytics Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="space-y-6">
+    <!-- Critical Alerts -->
+    {% if alerts.critical %}
+    <div class="bg-red-50 border border-red-200 rounded-lg p-6">
+        <h2 class="text-lg font-semibold text-red-800 mb-4 flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+            </svg>
+            Critical Alerts ({{ alerts.critical|length }})
+        </h2>
+        <div class="space-y-3">
+            {% for alert in alerts.critical %}
+            <div class="flex items-center justify-between p-4 bg-red-100 rounded-lg">
+                <div class="flex-1">
+                    <h3 class="font-medium text-red-800">{{ alert.inventory_item.medicine.name }}</h3>
+                    <p class="text-red-700 text-sm">{{ alert.message }}</p>
+                    <p class="text-red-600 text-xs mt-1">{{ alert.created_at|timesince }} ago</p>
+                </div>
+                <form method="post" action="{% url 'resolve-alert' alert.id %}" class="ml-4">
+                    {% csrf_token %}
+                    <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm">
+                        Resolve
+                    </button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- High Priority Alerts -->
+    {% if alerts.high %}
+    <div class="bg-orange-50 border border-orange-200 rounded-lg p-6">
+        <h2 class="text-lg font-semibold text-orange-800 mb-4 flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+            </svg>
+            High Priority Alerts ({{ alerts.high|length }})
+        </h2>
+        <div class="space-y-3">
+            {% for alert in alerts.high %}
+            <div class="flex items-center justify-between p-4 bg-orange-100 rounded-lg">
+                <div class="flex-1">
+                    <h3 class="font-medium text-orange-800">{{ alert.inventory_item.medicine.name }}</h3>
+                    <p class="text-orange-700 text-sm">{{ alert.message }}</p>
+                    <p class="text-orange-600 text-xs mt-1">{{ alert.created_at|timesince }} ago</p>
+                </div>
+                <form method="post" action="{% url 'resolve-alert' alert.id %}" class="ml-4">
+                    {% csrf_token %}
+                    <button type="submit" class="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 rounded text-sm">
+                        Resolve
+                    </button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Medium Priority Alerts -->
+    {% if alerts.medium %}
+    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+        <h2 class="text-lg font-semibold text-yellow-800 mb-4 flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+            </svg>
+            Medium Priority Alerts ({{ alerts.medium|length }})
+        </h2>
+        <div class="space-y-3">
+            {% for alert in alerts.medium %}
+            <div class="flex items-center justify-between p-4 bg-yellow-100 rounded-lg">
+                <div class="flex-1">
+                    <h3 class="font-medium text-yellow-800">{{ alert.inventory_item.medicine.name }}</h3>
+                    <p class="text-yellow-700 text-sm">{{ alert.message }}</p>
+                    <p class="text-yellow-600 text-xs mt-1">{{ alert.created_at|timesince }} ago</p>
+                </div>
+                <form method="post" action="{% url 'resolve-alert' alert.id %}" class="ml-4">
+                    {% csrf_token %}
+                    <button type="submit" class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm">
+                        Resolve
+                    </button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Low Priority Alerts -->
+    {% if alerts.low %}
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <h2 class="text-lg font-semibold text-blue-800 mb-4 flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+            </svg>
+            Low Priority Alerts ({{ alerts.low|length }})
+        </h2>
+        <div class="space-y-3">
+            {% for alert in alerts.low %}
+            <div class="flex items-center justify-between p-4 bg-blue-100 rounded-lg">
+                <div class="flex-1">
+                    <h3 class="font-medium text-blue-800">{{ alert.inventory_item.medicine.name }}</h3>
+                    <p class="text-blue-700 text-sm">{{ alert.message }}</p>
+                    <p class="text-blue-600 text-xs mt-1">{{ alert.created_at|timesince }} ago</p>
+                </div>
+                <form method="post" action="{% url 'resolve-alert' alert.id %}" class="ml-4">
+                    {% csrf_token %}
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">
+                        Resolve
+                    </button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- No Alerts Message -->
+    {% if not alerts.critical and not alerts.high and not alerts.medium and not alerts.low %}
+    <div class="bg-white rounded-lg shadow p-12 text-center">
+        <div class="text-green-400 mb-4">
+            <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-800 mb-2">No Active Alerts</h2>
+        <p class="text-gray-600">All inventory items are properly managed and within acceptable limits.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

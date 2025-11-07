@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block title %}Low Stock Items - HMS{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Low Stock Items</h1>
+            <p class="text-gray-600">Items that need immediate restocking</p>
+        </div>
+        <div class="flex space-x-2">
+            <a href="{% url 'inventory-list' %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition duration-200">
+                Back to Inventory
+            </a>
+            <a href="{% url 'inventory-dashboard' %}" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md transition duration-200">
+                Analytics Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+        <div class="flex items-center">
+            <svg class="w-5 h-5 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+            </svg>
+            <p class="text-yellow-800">
+                <strong>Alert:</strong> {{ items|length }} item(s) are below their minimum stock levels and need restocking.
+            </p>
+        </div>
+    </div>
+</div>
+
+<div class="bg-white rounded-lg shadow overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Medicine</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Batch Number</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Stock</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Minimum Level</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deficit</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for item in items %}
+                <tr class="{% if item.quantity == 0 %}bg-red-50{% else %}bg-yellow-50{% endif %}">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">{{ item.medicine.name }}</div>
+                        <div class="text-sm text-gray-500">{{ item.medicine.generic_name }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.batch_number }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold {% if item.quantity == 0 %}text-red-600{% else %}text-yellow-600{% endif %}">
+                        {{ item.quantity }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.min_stock_level }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-red-600">
+                        {{ item.min_stock_level|add:"-1"|default:0 }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {{ item.supplier.name|default:"No supplier" }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <a href="{% url 'inventory-update' item.pk %}" class="text-blue-600 hover:text-blue-900 mr-3">Update Stock</a>
+                        <a href="{% url 'stock-transaction-create' %}" class="text-green-600 hover:text-green-900">Record Purchase</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="px-6 py-12 text-center">
+                        <div class="text-green-400 mb-4">
+                            <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <p class="text-gray-500 text-lg font-medium">No low stock items!</p>
+                        <p class="text-gray-400 mt-2">All inventory items are adequately stocked.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

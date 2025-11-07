@@ -1,0 +1,320 @@
+{% extends 'base.html' %}
+
+{% block title %}Inventory Analytics - HMS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        transition: transform 0.2s ease-in-out;
+    }
+    .stat-card:hover {
+        transform: translateY(-2px);
+    }
+    .chart-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Inventory Analytics Dashboard</h1>
+            <p class="text-gray-600">Comprehensive overview of inventory performance and metrics</p>
+        </div>
+        <div class="flex space-x-2">
+            <a href="{% url 'inventory-list' %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition duration-200">
+                Back to Inventory
+            </a>
+            <a href="{% url 'stock-alerts' %}" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md transition duration-200">
+                View Alerts
+            </a>
+        </div>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Total Items</p>
+                    <p class="text-2xl font-bold text-gray-800">{{ total_items }}</p>
+                </div>
+                <div class="p-2 bg-blue-100 rounded-lg">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Total Value</p>
+                    <p class="text-2xl font-bold text-gray-800">${{ total_value|floatformat:2 }}</p>
+                </div>
+                <div class="p-2 bg-green-100 rounded-lg">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Low Stock</p>
+                    <p class="text-2xl font-bold text-yellow-600">{{ low_stock_count }}</p>
+                </div>
+                <div class="p-2 bg-yellow-100 rounded-lg">
+                    <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-orange-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Near Expiry</p>
+                    <p class="text-2xl font-bold text-orange-600">{{ near_expiry_count }}</p>
+                </div>
+                <div class="p-2 bg-orange-100 rounded-lg">
+                    <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-red-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Expired</p>
+                    <p class="text-2xl font-bold text-red-600">{{ expired_count }}</p>
+                </div>
+                <div class="p-2 bg-red-100 rounded-lg">
+                    <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts and Analytics -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Category Distribution -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold mb-4">Inventory by Category</h3>
+            <div class="chart-container">
+                <canvas id="categoryChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Stock Status -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold mb-4">Stock Status Distribution</h3>
+            <div class="chart-container">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Moving Items and Alerts -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Top Moving Items -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold mb-4">Top Moving Items (Last 30 Days)</h3>
+            <div class="space-y-4">
+                {% for item in top_moving %}
+                <div class="flex items-center justify-between p-3 border rounded-lg">
+                    <div class="flex-1">
+                        <h4 class="font-medium text-gray-800">{{ item.inventory_item__medicine__name }}</h4>
+                        <p class="text-sm text-gray-500">Sold: {{ item.total_sold|floatformat:0 }} units</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                            #{{ forloop.counter }}
+                        </span>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-gray-500 text-center py-4">No sales data available</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Recent Stock Alerts -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold mb-4">Recent Stock Alerts</h3>
+            <div class="space-y-4">
+                {% for alert in recent_alerts %}
+                <div class="p-3 border rounded-lg {% if alert.severity == 'critical' %}bg-red-50 border-red-200{% elif alert.severity == 'high' %}bg-orange-50 border-orange-200{% else %}bg-yellow-50 border-yellow-200{% endif %}">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <h4 class="font-medium {% if alert.severity == 'critical' %}text-red-800{% elif alert.severity == 'high' %}text-orange-800{% else %}text-yellow-800{% endif %}">
+                                {{ alert.inventory_item.medicine.name }}
+                            </h4>
+                            <p class="text-sm {% if alert.severity == 'critical' %}text-red-600{% elif alert.severity == 'high' %}text-orange-600{% else %}text-yellow-600{% endif %}">
+                                {{ alert.message }}
+                            </p>
+                            <p class="text-xs text-gray-500 mt-1">
+                                {{ alert.created_at|timesince }} ago
+                            </p>
+                        </div>
+                        <span class="px-2 py-1 text-xs rounded-full {% if alert.severity == 'critical' %}bg-red-100 text-red-800{% elif alert.severity == 'high' %}bg-orange-100 text-orange-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                            {{ alert.get_severity_display }}
+                        </span>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-gray-500 text-center py-4">No active alerts</p>
+                {% endfor %}
+            </div>
+            {% if recent_alerts %}
+            <div class="mt-4 text-center">
+                <a href="{% url 'stock-alerts' %}" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                    View All Alerts →
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Expiry Timeline -->
+    <div class="mt-8 bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold mb-4">Items Expiring in Next 90 Days</h3>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Medicine</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Batch</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expiry Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Days Left</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for item in near_expiry_items %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ item.medicine.name }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.batch_number }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.quantity }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.expiry_date|date:"M d, Y" }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 py-1 text-xs rounded-full {% if item.days_until_expiry <= 7 %}bg-red-100 text-red-800{% elif item.days_until_expiry <= 30 %}bg-orange-100 text-orange-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                {{ item.days_until_expiry }} days
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
+                            No items expiring in the next 90 days
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Category Distribution Chart
+    const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+    const categoryChart = new Chart(categoryCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [
+                {% for cat in category_distribution %}
+                    '{{ cat.category__name|default:"Uncategorized" }}',
+                {% endfor %}
+            ],
+            datasets: [{
+                data: [
+                    {% for cat in category_distribution %}
+                        {{ cat.total_value|default:0 }},
+                    {% endfor %}
+                ],
+                backgroundColor: [
+                    '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
+                    '#06B6D4', '#84CC16', '#F97316', '#6366F1', '#EC4899'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'right',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed;
+                            return `${label}: $${value.toFixed(2)}`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Stock Status Chart
+    const statusCtx = document.getElementById('statusChart').getContext('2d');
+    const statusChart = new Chart(statusCtx, {
+        type: 'bar',
+        data: {
+            labels: ['In Stock', 'Low Stock', 'Near Expiry', 'Expired'],
+            datasets: [{
+                label: 'Number of Items',
+                data: [
+                    {{ total_items }},
+                    {{ low_stock_count }},
+                    {{ near_expiry_count }},
+                    {{ expired_count }}
+                ],
+                backgroundColor: [
+                    '#10B981',
+                    '#F59E0B',
+                    '#F97316',
+                    '#EF4444'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
