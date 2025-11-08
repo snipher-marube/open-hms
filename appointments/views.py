@@ -4,19 +4,60 @@ from django.contrib import messages
 from django.utils import timezone
 from .models import Appointment
 from .forms import AppointmentForm
-from core.models import Clinic
+from core.models import Clinic, User
+from django.core.paginator import Paginator
+from django.db.models import Q
 
 @login_required
 def appointment_list(request):
     appointments = Appointment.objects.all().order_by('-appointment_date')
-    today = timezone.now().date()
-    today_appointments = appointments.filter(appointment_date__date=today)
-    upcoming_appointments = appointments.filter(appointment_date__date__gt=today)
+
+    # Filtering
+    status = request.GET.get('status')
+    doctor = request.GET.get('doctor')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+
+    if status:
+        appointments = appointments.filter(status=status)
+    if doctor:
+        appointments = appointments.filter(doctor=doctor)
+    if start_date and end_date:
+        appointments = appointments.filter(appointment_date__range=[start_date, end_date])
+
+    # Searching
+    search_query = request.GET.get('search_query')
+    if search_query:
+        appointments = appointments.filter(
+            Q(patient__first_name__icontains=search_query) |
+            Q(patient__last_name__icontains=search_query)
+        )
+
+    # Pagination
+    paginator = Paginator(appointments, 10) # Show 10 appointments per page.
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    doctors = User.objects.filter(user_type='doctor')
+
+    # Preserve filters in pagination
+    query_params = request.GET.copy()
+    if 'page' in query_params:
+        del query_params['page']
+    query_string = query_params.urlencode()
     
     return render(request, 'appointments/appointment_list.html', {
-        'appointments': appointments,
-        'today_appointments': today_appointments,
-        'upcoming_appointments': upcoming_appointments,
+        'page_obj': page_obj,
+        'doctors': doctors,
+        'status_choices': Appointment.STATUS_CHOICES,
+        'filters': {
+            'status': status,
+            'doctor': doctor,
+            'start_date': start_date,
+            'end_date': end_date,
+            'search_query': search_query,
+        },
+        'query_string': query_string
     })
 
 @login_required
@@ -30,7 +71,7 @@ def appointment_create(request):
         form = AppointmentForm(request.POST)
         if form.is_valid():
             appointment = form.save(commit=False)
-            appointment.clinic = default_clinic  # Set the clinic
+            appointment.clinic = default_clinic
             appointment.created_by = request.user
             appointment.save()
             messages.success(request, 'Appointment created successfully.')
