@@ -38,6 +38,8 @@ django-weasyprint==2.4.0
     # via hms (pyproject.toml)
 et-xmlfile==2.0.0
     # via openpyxl
+faker==37.12.0
+    # via hms (pyproject.toml)
 fonttools==4.60.1
     # via
     #   matplotlib
@@ -100,7 +102,9 @@ tinycss2==1.4.0
 tinyhtml5==2.0.0
     # via weasyprint
 tzdata==2025.2
-    # via pandas
+    # via
+    #   faker
+    #   pandas
 weasyprint==66.0
     # via django-weasyprint
 webencodings==0.5.1
