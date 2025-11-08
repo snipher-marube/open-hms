@@ -28,8 +28,6 @@ class AppointmentCreateTestCase(TestCase):
         response = self.client.post(reverse('appointment-create'), data=appointment_data)
         self.assertEqual(response.status_code, 302)
         self.assertTrue(Appointment.objects.exists())
-<<<<<<< HEAD
-=======
 
 class AppointmentListTestCase(TestCase):
     def setUp(self):
@@ -65,4 +63,3 @@ class AppointmentListTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['page_obj']), 1)
         self.assertEqual(response.context['page_obj'][0], self.appointment2)
->>>>>>> f90b2db147130426127989ddb52e6cce5d321017

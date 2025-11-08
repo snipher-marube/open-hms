@@ -71,12 +71,8 @@ def appointment_create(request):
         form = AppointmentForm(request.POST)
         if form.is_valid():
             appointment = form.save(commit=False)
-<<<<<<< HEAD
-            appointment.clinic = default_clinic  # Set the clinic
-=======
             appointment.clinic = default_clinic
             appointment.created_by = request.user
->>>>>>> f90b2db147130426127989ddb52e6cce5d321017
             appointment.save()
             messages.success(request, 'Appointment created successfully.')
             return redirect('appointment-list')
