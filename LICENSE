@@ -1,0 +1,98 @@
+```text
+MIT License
+
+Copyright (c) 2025 Clinic HMS
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+## 📋 License Explanation
+
+### What the MIT License Allows
+
+✅ **Commercial Use** - You can use this software in commercial products  
+✅ **Modification** - You can modify the source code  
+✅ **Distribution** - You can distribute original or modified versions  
+✅ **Private Use** - You can use it privately  
+✅ **Sublicensing** - You can incorporate it into other software  
+
+### What You Must Do
+
+📝 **Include the License** - Keep the MIT license notice in all copies  
+📝 **Credit the Authors** - Include the original copyright notice  
+
+### What the License Doesn't Cover
+
+🚫 **No Warranty** - The software is provided "as is" without warranties  
+🚫 **No Liability** - Authors are not liable for any damages  
+🚫 **No Trademark Grant** - Does not grant rights to use project names/trademarks  
+
+## 🔒 Additional Considerations for Healthcare Software
+
+While the MIT License provides maximum freedom for users, when using this HMS in healthcare settings, you should also consider:
+
+### Compliance Requirements
+- **HIPAA Compliance** - Ensure proper data protection measures
+- **Medical Device Regulations** - If classified as a medical device
+- **Data Privacy Laws** - GDPR, CCPA, and other regional regulations
+- **Clinical Safety** - Proper testing and validation for clinical use
+
+### Recommended Additional Measures
+```text
+DISCLAIMER: This software is intended for educational and demonstration 
+purposes. For production use in healthcare settings, please ensure:
+
+1. Proper security auditing and penetration testing
+2. Compliance with local healthcare regulations
+3. Data backup and disaster recovery procedures
+4. Clinical validation and testing
+5. Professional security configuration
+6. Regular security updates and maintenance
+
+The authors are not responsible for any clinical decisions made using 
+this software or any data breaches that may occur.
+```
+
+## 🌍 Alternative Licenses Considered
+
+We chose MIT because it's:
+
+- **Business-friendly** - Companies can confidently use and contribute
+- **Developer-friendly** - Clear and simple to understand
+- **Open source** - Promotes collaboration and innovation
+- **Permissive** - Maximum freedom for users
+
+Other licenses considered:
+- **GPL v3** - Too restrictive for healthcare adoption
+- **Apache 2.0** - Good but more complex than MIT
+- **BSD 3-Clause** - Similar to MIT but with additional clause
+
+## 📞 License Questions
+
+If you have questions about:
+- Using Clinic HMS in your organization
+- License compatibility
+- Commercial licensing options
+- Contributing back to the project
+
+Please open an issue in our GitHub repository or contact us through our discussion forum.
+
+---
+
+**Note**: This license applies to the Clinic HMS software. Any patient data or information processed by the software is subject to your local healthcare data protection laws and regulations.
