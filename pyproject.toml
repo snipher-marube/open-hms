@@ -19,10 +19,6 @@ dependencies = [
     "reportlab>=4.4.4",
     "seaborn>=0.13.2",
     "whitenoise>=6.11.0",
-<<<<<<< HEAD
-    "faker>=13.14.0",
-=======
     "Faker>=13.14.0",
-    "tqdm>=4.62.3",
->>>>>>> 1a3bcdee486d226188cfc10ab542d50cffc9196e
+    "tqdm>=4.67.1",
 ]
