@@ -42,8 +42,8 @@ A comprehensive, open-source Hospital Management System built with Django and Ta
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/yourusername/clinic-hms.git
-cd clinic-hms
+git clone https://github.com/snipher-marube/open-hms.git
+cd open-hms
 ```
 
 2. **Create virtual environment**
