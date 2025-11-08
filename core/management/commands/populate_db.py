@@ -4,10 +4,11 @@ from django.utils.timezone import make_aware
 from faker import Faker
 from tqdm import tqdm
 from core.models import Clinic, User
-from patients.models import Patient
+from patients.models import Patient, MedicalRecord
 from appointments.models import Appointment
 from inventory.models import Supplier, Category, InventoryItem, StockTransaction
 from prescriptions.models import Medicine
+from billing.models import Bill, BillItem, Payment
 
 class Command(BaseCommand):
     help = 'Populates the database with fake data'
@@ -146,5 +147,68 @@ class Command(BaseCommand):
                 created_by=random.choice(doctors),
                 patient=random.choice(patients) if transaction_type == 'sale' else None
             )
+
+        # Create Medical Records
+        self.stdout.write("Creating medical records...")
+        for patient in tqdm(patients):
+            for _ in range(random.randint(1, 5)):
+                MedicalRecord.objects.create(
+                    patient=patient,
+                    doctor=random.choice(doctors),
+                    symptoms=fake.text(),
+                    diagnosis=fake.text(),
+                    treatment=fake.text(),
+                    notes=fake.text()
+                )
+
+        # Create Bills
+        self.stdout.write("Creating bills...")
+        bills = []
+        for patient in tqdm(patients):
+            for _ in range(random.randint(1, 3)):
+                bill = Bill.objects.create(
+                    patient=patient,
+                    bill_number=fake.uuid4(),
+                    due_date=fake.future_date(end_date='+30d'),
+                    created_by=random.choice(doctors)
+                )
+
+                # Create Bill Items
+                total_amount = 0
+                for _ in range(random.randint(1, 5)):
+                    unit_price = fake.pydecimal(left_digits=3, right_digits=2, positive=True, min_value=10, max_value=500)
+                    quantity = random.randint(1, 3)
+                    amount = unit_price * quantity
+                    BillItem.objects.create(
+                        bill=bill,
+                        description=fake.sentence(),
+                        quantity=quantity,
+                        unit_price=unit_price,
+                        amount=amount
+                    )
+                    total_amount += amount
+
+                bill.total_amount = total_amount
+                bill.save()
+                bills.append(bill)
+
+        # Create Payments
+        self.stdout.write("Creating payments...")
+        for bill in tqdm(bills):
+            if random.choice([True, False]):
+                payment_amount = bill.total_amount
+                bill.status = 'paid'
+            else:
+                payment_amount = fake.pydecimal(left_digits=5, right_digits=2, positive=True, max_value=int(bill.total_amount))
+                bill.status = 'partial'
+
+            Payment.objects.create(
+                bill=bill,
+                amount=payment_amount,
+                payment_method=random.choice(['cash', 'card']),
+                reference_number=fake.uuid4()
+            )
+            bill.paid_amount = payment_amount
+            bill.save()
 
         self.stdout.write(self.style.SUCCESS('Successfully populated the database with fake data.'))
