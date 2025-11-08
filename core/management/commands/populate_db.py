@@ -6,7 +6,7 @@ from tqdm import tqdm
 from core.models import Clinic, User
 from patients.models import Patient
 from appointments.models import Appointment
-from inventory.models import Supplier, Category, InventoryItem
+from inventory.models import Supplier, Category, InventoryItem, StockTransaction
 from prescriptions.models import Medicine
 
 class Command(BaseCommand):
@@ -111,10 +111,11 @@ class Command(BaseCommand):
 
         # Create Inventory Items
         self.stdout.write("Creating inventory items...")
+        inventory_items = []
         for _ in tqdm(range(200)):
             cost_price = fake.pydecimal(left_digits=2, right_digits=2, positive=True, min_value=1, max_value=100)
             selling_price = round(cost_price * fake.pydecimal(left_digits=1, right_digits=2, positive=True, min_value=1, max_value=3), 2)
-            InventoryItem.objects.create(
+            item = InventoryItem.objects.create(
                 medicine=random.choice(medicines),
                 category=random.choice(categories),
                 batch_number=fake.ean(length=13),
@@ -125,6 +126,25 @@ class Command(BaseCommand):
                 supplier=random.choice(suppliers),
                 min_stock_level=random.randint(5, 20),
                 max_stock_level=random.randint(100, 500)
+            )
+            inventory_items.append(item)
+
+        # Create Stock Transactions
+        self.stdout.write("Creating stock transactions...")
+        for _ in tqdm(range(500)):
+            inventory_item = random.choice(inventory_items)
+            transaction_type = random.choice(['purchase', 'sale'])
+            if transaction_type == 'purchase':
+                quantity = random.randint(10, 50)
+            else:
+                quantity = -random.randint(1, 5)
+
+            StockTransaction.objects.create(
+                inventory_item=inventory_item,
+                transaction_type=transaction_type,
+                quantity=quantity,
+                created_by=random.choice(doctors),
+                patient=random.choice(patients) if transaction_type == 'sale' else None
             )
 
         self.stdout.write(self.style.SUCCESS('Successfully populated the database with fake data.'))

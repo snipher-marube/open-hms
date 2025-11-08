@@ -3,7 +3,7 @@ from django.test import TestCase
 from core.models import Clinic, User
 from patients.models import Patient
 from appointments.models import Appointment
-from inventory.models import Supplier, Category, InventoryItem
+from inventory.models import Supplier, Category, InventoryItem, StockTransaction
 from prescriptions.models import Medicine
 
 class PopulateDbTestCase(TestCase):
@@ -20,3 +20,4 @@ class PopulateDbTestCase(TestCase):
         self.assertEqual(Category.objects.count(), 5)
         self.assertEqual(Medicine.objects.count(), 100)
         self.assertEqual(InventoryItem.objects.count(), 200)
+        self.assertEqual(StockTransaction.objects.count(), 500)
