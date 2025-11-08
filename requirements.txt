@@ -101,6 +101,8 @@ tinycss2==1.4.0
     #   weasyprint
 tinyhtml5==2.0.0
     # via weasyprint
+tqdm==4.67.1
+    # via hms (pyproject.toml)
 tzdata==2025.2
     # via
     #   faker
