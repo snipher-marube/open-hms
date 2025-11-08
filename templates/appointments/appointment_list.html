@@ -10,6 +10,50 @@
     </a>
 </div>
 
+<!-- Filter and Search Form -->
+<div class="bg-white rounded-lg shadow p-4 mb-6">
+    <form method="get" action="{% url 'appointment-list' %}">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
+                <select id="status" name="status" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                    <option value="">All</option>
+                    {% for value, display in status_choices %}
+                        <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ display }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="doctor" class="block text-sm font-medium text-gray-700">Doctor</label>
+                <select id="doctor" name="doctor" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                    <option value="">All</option>
+                    {% for doc in doctors %}
+                        <option value="{{ doc.pk }}" {% if filters.doctor == doc.pk|stringformat:"s" %}selected{% endif %}>{{ doc.get_full_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="start_date" class="block text-sm font-medium text-gray-700">Start Date</label>
+                <input type="date" id="start_date" name="start_date" value="{{ filters.start_date|default:'' }}" class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+            </div>
+            <div>
+                <label for="end_date" class="block text-sm font-medium text-gray-700">End Date</label>
+                <input type="date" id="end_date" name="end_date" value="{{ filters.end_date|default:'' }}" class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+            </div>
+            <div class="md:col-span-4">
+                <label for="search_query" class="block text-sm font-medium text-gray-700">Search by Patient Name</label>
+                <input type="text" id="search_query" name="search_query" value="{{ filters.search_query|default:'' }}" placeholder="e.g., John Doe" class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+            </div>
+        </div>
+        <div class="mt-4 flex justify-end">
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                Filter
+            </button>
+        </div>
+    </form>
+</div>
+
+
 <div class="bg-white rounded-lg shadow overflow-hidden">
     <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
@@ -22,7 +66,7 @@
             </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
-            {% for appointment in appointments %}
+            {% for appointment in page_obj.object_list %}
             <tr>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm font-medium text-gray-900">{{ appointment.patient.first_name }} {{ appointment.patient.last_name }}</div>
@@ -48,5 +92,24 @@
             {% endfor %}
         </tbody>
     </table>
+</div>
+
+<!-- Pagination -->
+<div class="mt-6 flex justify-between items-center">
+    <div>
+        <span class="text-sm text-gray-700">
+            Showing page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+        </span>
+    </div>
+    <div>
+        {% if page_obj.has_previous %}
+            <a href="?page=1&{{ query_string }}" class="bg-white border border-gray-300 text-gray-500 hover:bg-gray-50 px-4 py-2 rounded-l">First</a>
+            <a href="?page={{ page_obj.previous_page_number }}&{{ query_string }}" class="bg-white border border-gray-300 text-gray-500 hover:bg-gray-50 px-4 py-2">Previous</a>
+        {% endif %}
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}&{{ query_string }}" class="bg-white border border-gray-300 text-gray-500 hover:bg-gray-50 px-4 py-2">Next</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}&{{ query_string }}" class="bg-white border border-gray-300 text-gray-500 hover:bg-gray-50 px-4 py-2 rounded-r">Last</a>
+        {% endif %}
+    </div>
 </div>
 {% endblock %}
