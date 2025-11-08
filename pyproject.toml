@@ -19,4 +19,5 @@ dependencies = [
     "reportlab>=4.4.4",
     "seaborn>=0.13.2",
     "whitenoise>=6.11.0",
+    "Faker>=13.14.0",
 ]
