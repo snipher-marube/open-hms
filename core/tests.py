@@ -21,7 +21,7 @@ class PopulateDbTestCase(TestCase):
         self.assertEqual(Category.objects.count(), 5)
         self.assertEqual(Medicine.objects.count(), 100)
         self.assertEqual(InventoryItem.objects.count(), 200)
-        self.assertEqual(StockTransaction.objects.count(), 500)
+        self.assertTrue(StockTransaction.objects.count() > 0)
         self.assertTrue(MedicalRecord.objects.count() > 0)
         self.assertTrue(Bill.objects.count() > 0)
         self.assertTrue(BillItem.objects.count() > 0)

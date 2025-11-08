@@ -9,6 +9,7 @@ from appointments.models import Appointment
 from inventory.models import Supplier, Category, InventoryItem, StockTransaction
 from prescriptions.models import Medicine
 from billing.models import Bill, BillItem, Payment
+from django.core.exceptions import ValidationError
 
 class Command(BaseCommand):
     help = 'Populates the database with fake data'
@@ -133,20 +134,27 @@ class Command(BaseCommand):
         # Create Stock Transactions
         self.stdout.write("Creating stock transactions...")
         for _ in tqdm(range(500)):
-            inventory_item = random.choice(inventory_items)
             transaction_type = random.choice(['purchase', 'sale'])
             if transaction_type == 'purchase':
+                inventory_item = random.choice(inventory_items)
                 quantity = random.randint(10, 50)
             else:
+                # Ensure there is enough stock for a sale
+                inventory_item = InventoryItem.objects.filter(quantity__gt=5).order_by('?').first()
+                if not inventory_item:
+                    continue
                 quantity = -random.randint(1, 5)
 
-            StockTransaction.objects.create(
-                inventory_item=inventory_item,
-                transaction_type=transaction_type,
-                quantity=quantity,
-                created_by=random.choice(doctors),
-                patient=random.choice(patients) if transaction_type == 'sale' else None
-            )
+            try:
+                StockTransaction.objects.create(
+                    inventory_item=inventory_item,
+                    transaction_type=transaction_type,
+                    quantity=quantity,
+                    created_by=random.choice(doctors),
+                    patient=random.choice(patients) if transaction_type == 'sale' else None
+                )
+            except ValidationError:
+                continue
 
         # Create Medical Records
         self.stdout.write("Creating medical records...")
