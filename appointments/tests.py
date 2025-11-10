@@ -1,6 +1,7 @@
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.utils import timezone
+from django.core.exceptions import ValidationError
 from core.models import User, Clinic
 from patients.models import Patient
 from .models import Appointment
@@ -63,3 +64,16 @@ class AppointmentListTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['page_obj']), 1)
         self.assertEqual(response.context['page_obj'][0], self.appointment2)
+
+class AppointmentModelTestCase(TestCase):
+    def setUp(self):
+        self.clinic = Clinic.objects.create(name='Test Clinic', address='123 Test St', established_date=timezone.now())
+        self.doctor = User.objects.create_user(username='doctor', password='password', user_type='doctor')
+        self.patient = Patient.objects.create(first_name='John', last_name='Doe', date_of_birth='1990-01-01', clinic=self.clinic)
+
+    def test_prevent_double_booking(self):
+        now = timezone.now()
+        Appointment.objects.create(patient=self.patient, doctor=self.doctor, appointment_date=now, duration=30, clinic=self.clinic, reason='test')
+        with self.assertRaises(ValidationError):
+            appointment = Appointment(patient=self.patient, doctor=self.doctor, appointment_date=now, duration=30, clinic=self.clinic, reason='test')
+            appointment.full_clean()

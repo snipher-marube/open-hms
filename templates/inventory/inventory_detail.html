@@ -57,7 +57,7 @@
                         <p class="text-sm text-gray-600">Current Stock</p>
                     </div>
                     <div class="text-center p-4 bg-green-50 rounded-lg">
-                        <p class="text-2xl font-bold text-green-600">${{ item.total_value|floatformat:2 }}</p>
+                        <p class="text-2xl font-bold text-green-600">Ksh {{ item.total_value|floatformat:2 }}</p>
                         <p class="text-sm text-gray-600">Total Value</p>
                     </div>
                     <div class="text-center p-4 bg-yellow-50 rounded-lg">
@@ -76,11 +76,11 @@
                 <h2 class="text-lg font-semibold text-gray-800 mb-4">Pricing Information</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div class="text-center p-4 border border-gray-200 rounded-lg">
-                        <p class="text-lg font-semibold text-gray-800">${{ item.cost_price }}</p>
+                        <p class="text-lg font-semibold text-gray-800">Ksh {{ item.cost_price }}</p>
                         <p class="text-sm text-gray-600">Cost Price</p>
                     </div>
                     <div class="text-center p-4 border border-gray-200 rounded-lg">
-                        <p class="text-lg font-semibold text-gray-800">${{ item.selling_price }}</p>
+                        <p class="text-lg font-semibold text-gray-800">Ksh {{ item.selling_price }}</p>
                         <p class="text-sm text-gray-600">Selling Price</p>
                     </div>
                     <div class="text-center p-4 border border-gray-200 rounded-lg">
@@ -89,6 +89,7 @@
                     </div>
                 </div>
             </div>
+
         </div>
 
         <!-- Right Column - Details -->

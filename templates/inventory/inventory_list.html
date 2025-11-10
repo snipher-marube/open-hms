@@ -7,7 +7,7 @@
 <div class="mb-6">
     <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
         <div>
-            <h1 class="text-2xl font-bold text-gray-800">Inventory Management</h1>
+            <h1 class="text-2xl font-bold text-gray-800">Inventory Overview</h1>
             <p class="text-gray-600">Manage medicine stock, track expiry dates, and monitor inventory levels</p>
         </div>
         <div class="flex flex-wrap gap-2">
@@ -43,7 +43,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-500">Total Value</p>
-                    <p class="text-2xl font-bold text-gray-800">${{ total_value|floatformat:2 }}</p>
+                    <p class="text-2xl font-bold text-gray-800">Ksh {{ total_value|floatformat:2 }}</p>
                 </div>
                 <div class="p-2 bg-green-100 rounded-lg">
                     <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -166,8 +166,8 @@
                     <!-- Pricing -->
                     <td class="px-6 py-4">
                         <div class="text-sm">
-                            <div class="text-gray-900">Sell: ${{ item.selling_price }}</div>
-                            <div class="text-gray-500">Cost: ${{ item.cost_price }}</div>
+                            <div class="text-gray-900">Sell: Ksh {{ item.selling_price }}</div>
+                            <div class="text-gray-500">Cost: Ksh {{ item.cost_price }}</div>
                             <div class="text-xs text-green-600 font-medium mt-1">
                                 Margin: {{ item.profit_margin|floatformat:1 }}%
                             </div>
