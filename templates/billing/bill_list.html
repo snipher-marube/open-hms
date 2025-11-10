@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mx-auto">
+    <h1 class="text-2xl font-bold mb-4">Bills</h1>
+    <a href="{% url 'bill-create' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4 inline-block">Create Bill</a>
+    <table class="min-w-full bg-white">
+        <thead>
+            <tr>
+                <th class="py-2 px-4 border-b">Bill Number</th>
+                <th class="py-2 px-4 border-b">Patient</th>
+                <th class="py-2 px-4 border-b">Total Amount</th>
+                <th class="py-2 px-4 border-b">Status</th>
+                <th class="py-2 px-4 border-b">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for bill in bills %}
+            <tr>
+                <td class="py-2 px-4 border-b">{{ bill.bill_number }}</td>
+                <td class="py-2 px-4 border-b">{{ bill.patient }}</td>
+                <td class="py-2 px-4 border-b">{{ bill.total_amount }}</td>
+                <td class="py-2 px-4 border-b">{{ bill.get_status_display }}</td>
+                <td class="py-2 px-4 border-b">
+                    <a href="{% url 'bill-detail' bill.pk %}" class="text-blue-500">View</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

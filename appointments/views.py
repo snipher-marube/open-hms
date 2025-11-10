@@ -2,6 +2,8 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
+from django.http import JsonResponse
+from django.urls import reverse
 from .models import Appointment
 from .forms import AppointmentForm
 from core.models import Clinic, User
@@ -117,3 +119,26 @@ def appointment_update_status(request, pk):
             appointment.save()
             messages.success(request, f'Appointment status updated to {appointment.get_status_display()}.')
         return redirect('appointment-detail', pk=appointment.pk)
+
+@login_required
+def calendar(request):
+    """
+    Renders the calendar page.
+    """
+    return render(request, 'appointments/calendar.html')
+
+@login_required
+def all_appointments(request):
+    """
+    Returns all appointments in JSON format for the calendar.
+    """
+    appointments = Appointment.objects.all()
+    data = []
+    for appointment in appointments:
+        data.append({
+            'title': f'{appointment.patient} with Dr. {appointment.doctor}',
+            'start': appointment.appointment_date.isoformat(),
+            'end': appointment.end_time.isoformat(),
+            'url': reverse('appointment-detail', args=[appointment.pk]),
+        })
+    return JsonResponse(data, safe=False)

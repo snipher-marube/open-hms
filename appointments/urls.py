@@ -8,4 +8,6 @@ urlpatterns = [
     path('<int:pk>/update/', views.appointment_update, name='appointment-update'),
     path('<int:pk>/delete/', views.appointment_delete, name='appointment-delete'),
     path('<int:pk>/update-status/', views.appointment_update_status, name='appointment-update-status'),
+    path('calendar/', views.calendar, name='calendar'),
+    path('api/all_appointments/', views.all_appointments, name='all_appointments'),
 ]

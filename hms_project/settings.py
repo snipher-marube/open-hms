@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -146,3 +147,10 @@ AUTH_USER_MODEL = 'core.User'
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
 LOGIN_URL = 'login'
+
+# M-Pesa API credentials
+# Set these environment variables in your deployment environment
+MPESA_CONSUMER_KEY = os.environ.get('MPESA_CONSUMER_KEY', 'your_consumer_key')
+MPESA_CONSUMER_SECRET = os.environ.get('MPESA_CONSUMER_SECRET', 'your_consumer_secret')
+MPESA_SHORTCODE = os.environ.get('MPESA_SHORTCODE', 'your_shortcode')
+MPESA_PASSKEY = os.environ.get('MPESA_PASSKEY', 'your_passkey')
